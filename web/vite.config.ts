@@ -49,6 +49,7 @@ function sitePages(): Plugin {
     const repo = `https://github.com/${release.repo}`
     const tokens: Record<string, string> = {
         REPO_URL: repo,
+        SITE_URL: release.site,
         DOWNLOAD_URL: `${repo}/releases/latest/download/Questly.exe`,
         ORIGINAL_URL: 'https://github.com/markterence/discord-quest-completer',
         VERSION: release.version,

@@ -5,8 +5,8 @@ Questly makes Discord see a game running, so your quest timer ticks while you do
 
 <p align="center">
   <a href="https://github.com/svyixiu/questly/releases/latest/download/Questly.exe">Download for Windows</a> ·
-  <a href="%SITE_URL%/try">Try it in your browser</a> ·
-  <a href="%SITE_URL%">Website</a>
+  <a href="https://questly-plum.vercel.app/try">Try it in your browser</a> ·
+  <a href="https://questly-plum.vercel.app">Website</a>
 </p>
 
 ![Questly's library, with two games running and seen by Discord](web/public/shots/library.jpg)
@@ -14,7 +14,7 @@ Questly makes Discord see a game running, so your quest timer ticks while you do
 > [!WARNING]
 > Making Discord believe you're playing a game you aren't goes against Discord's Terms of Service. Discord can take quest
 > rewards back, warn you, or suspend or ban your account. Questly isn't affiliated with Discord, and nobody behind Questly is
-> responsible for what happens to your account. Read the [Terms of Use](%SITE_URL%/terms-of-use) before using it.
+> responsible for what happens to your account. Read the [Terms of Use](https://questly-plum.vercel.app/terms-of-use) before using it.
 
 ## How it works
 
@@ -84,7 +84,7 @@ Questly is a fork of [Discord Quest Completer](https://github.com/markterence/di
 daily mirror of Discord's detectable game list come from there. Thank you!
 
 Questly also builds on Tauri, Vue.js, VueUse, Fuse.js, Tailwind CSS, discord-sdk and the Archivo typeface. See
-[Licenses](%SITE_URL%/licenses) and [Credits](%SITE_URL%/credits).
+[Licenses](https://questly-plum.vercel.app/licenses) and [Credits](https://questly-plum.vercel.app/credits).
 
 ## License
 
