@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Privacy Policy · Questly</title>
+  <meta name="description" content="What the Questly app and website store, read and connect to. Short version: no accounts, no analytics, your data stays on your PC." />
+  <meta name="theme-color" content="#1a1916" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+</head>
+<body data-page="doc">
+  <div class="site-glow" aria-hidden="true"><i></i><i></i><i></i></div>
+  <!-- include:header -->
+  <main id="main" class="wrap pt-14 sm:pt-20">
+    <div class="doc">
+      <div class="eyebrow">Legal</div>
+      <h1 class="section-title mt-3">Privacy Policy</h1>
+      <p class="text-muted mt-4">Last updated %RELEASE_DATE%</p>
+
+      <div class="paper callout mt-8">
+        <div class="eyebrow mb-2">The short version</div>
+        <p class="leading-relaxed">Questly has no accounts, no analytics and no servers of its own. Your library and settings stay on your PC.
+          The app talks to a few public services to get Discord's game list and game icons. This website doesn't use cookies,
+          analytics or ads.</p>
+      </div>
+
+      <article class="prose mt-6">
+        <h2>1. What this policy covers</h2>
+        <p>This policy covers the Questly desktop app (“the App”) and this website, including the live demo (“the Site”).
+          Both are made by the Questly project, the people who maintain
+          <a href="%REPO_URL%" target="_blank" rel="noopener">%REPO_URL%</a> (“we”). Questly isn't affiliated with Discord Inc.;
+          Discord's own privacy policy covers what Discord does with your data.</p>
+
+        <h2>2. The App</h2>
+        <h3>2.1 What stays on your PC</h3>
+        <p>Everything the App saves is stored locally and never sent to us or anyone else:</p>
+        <table>
+          <thead><tr><th>What</th><th>Where</th></tr></thead>
+          <tbody>
+            <tr><td>Your game library (games you added, which executable to use)</td><td><code>%APPDATA%\Questly\library.json</code></td></tr>
+            <tr><td>Settings: theme, timers, window options, Performance Guard and Legitimate Buddy preferences, and whether (and when) you accepted the risk notice</td><td>The App's own storage in <code>%LOCALAPPDATA%\me.markterence.discordquestcompleter</code></td></tr>
+            <tr><td>Stand-in game programs, game icons and the App's own icon files</td><td><code>%LOCALAPPDATA%\Questly</code></td></tr>
+            <tr><td>The installed App, shortcuts, and its entry in Apps &amp; features</td><td><code>%LOCALAPPDATA%\Programs\Questly</code>, your Desktop and Start menu, and <code>HKCU\…\Uninstall\Questly</code></td></tr>
+            <tr><td>Launch on startup, only if you turn it on</td><td>A value named <code>Questly</code> under <code>HKCU\Software\Microsoft\Windows\CurrentVersion\Run</code></td></tr>
+          </tbody>
+        </table>
+
+        <h3>2.2 What the App reads on your PC</h3>
+        <ul>
+          <li><strong>Discord's log file.</strong> To know when Discord has detected a game, the App follows Discord's own
+            <code>renderer_js.log</code> and looks for exactly two kinds of lines: that Discord's list of running games changed,
+            and which game Discord shows. It doesn't copy, store or send the file. It <strong>never</strong> reads Discord's
+            Local Storage, cookies, saved sign-in or token.</li>
+          <li><strong>Whether Discord is installed and running</strong>, from the list of running programs and Discord's install
+            folder, for Legitimate Buddy's Discord check and the “open/close Discord” options.</li>
+          <li><strong>CPU and memory load</strong> for Performance Guard, and <strong>the time since your last keyboard or
+            mouse input</strong> for Legitimate Buddy. These are only used in the moment and never stored.</li>
+        </ul>
+
+        <h3>2.3 What the App connects to</h3>
+        <ul>
+          <li><strong>The game list:</strong> a copy of Discord's public list of detectable games, published by the original
+            project on GitHub Pages (<code>markterence.github.io</code>), with Discord's public endpoint
+            <code>discord.com/api/applications/detectable</code> as a fallback. No login or token is sent.</li>
+          <li><strong>Game icons</strong> from Discord's image server, <code>cdn.discordapp.com</code>.</li>
+          <li><strong>Your own Discord app</strong>, through Discord's local connection on your PC, only if you use the RPC test
+            on the Activity page.</li>
+        </ul>
+        <p>Like any web request, these reveal your IP address and basic technical information to the service that answers
+          (GitHub, Discord). The App has no analytics, telemetry, crash reporting, ads or update checks.</p>
+
+        <h2>3. The Site</h2>
+        <ul>
+          <li><strong>Hosting.</strong> The Site is hosted by Vercel. To deliver and protect it, Vercel processes technical data
+            such as your IP address, browser, the pages you request and when. See
+            <a href="https://vercel.com/legal/privacy-policy" target="_blank" rel="noopener">Vercel's privacy policy</a>.
+            We don't add analytics, cookies, trackers or ads.</li>
+          <li><strong>The live demo</strong> runs entirely in your browser. Its pretend library and settings are saved in your
+            browser's local storage for this site, and never sent anywhere. The demo's Reset button, or clearing this site's
+            data in your browser, removes them.</li>
+          <li><strong>Your accent color</strong> on the Site is saved in local storage too.</li>
+          <li><strong>Game icons</strong> in the demo and on the Site load from Discord's image server.</li>
+          <li><strong>Downloads and source code</strong> are served by GitHub; see
+            <a href="https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement" target="_blank" rel="noopener">GitHub's privacy statement</a>.</li>
+        </ul>
+
+        <h2>4. Children</h2>
+        <p>Questly isn't meant for children under 13, or under the minimum age to use Discord where you live.</p>
+
+        <h2>5. Your choices</h2>
+        <p>We don't collect personal data, so there's nothing for us to show, correct or delete. To remove everything the App
+          stored, uninstall it and choose to remove your library and settings, or delete the folders listed above. For data
+          handled by Vercel, GitHub or Discord, contact them directly.</p>
+
+        <h2>6. Changes</h2>
+        <p>If this policy changes, we'll update this page and the date at the top. Important changes will also be mentioned
+          in the release notes.</p>
+
+        <h2>7. Contact</h2>
+        <p>Questions? Open an issue at <a href="%REPO_URL%/issues" target="_blank" rel="noopener">%REPO_URL%/issues</a>.</p>
+      </article>
+    </div>
+  </main>
+  <!-- include:footer -->
+  <script type="module" src="/src/pages/doc.ts"></script>
+</body>
+</html>

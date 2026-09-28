@@ -1,0 +1,3 @@
+/* the app's own styles, and Tailwind classes from the app's components */
+@import "../../../src/theme/style.css";
+@source "../../../src";

@@ -1,0 +1,145 @@
+/* Startup splash: a square card in the app's colors on a transparent window */
+
+html,
+body.splash-body {
+    background: transparent;
+}
+
+body.splash-body {
+    display: grid;
+    place-items: center;
+    height: 100vh;
+    margin: 0;
+    overflow: hidden;
+    --splash-green: #46d27a;
+}
+
+body.splash-light {
+    --splash-green: #25a052;
+}
+
+.splash {
+    position: relative;
+    /* 14px of window around the card leaves room for its shadow */
+    width: calc(100vw - 28px);
+    height: calc(100vh - 28px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 30px;
+    overflow: hidden;
+    background: var(--bg);
+    border: 1px solid var(--line-strong);
+    box-shadow: 0 12px 28px -14px rgba(0, 0, 0, 0.65);
+    animation: splash-in 700ms var(--ease-quint) both;
+}
+
+/* a soft accent glow behind the logo, like the app's background */
+.splash-glow {
+    position: absolute;
+    width: 220px;
+    height: 220px;
+    top: 50%;
+    left: 50%;
+    translate: -50% -66%;
+    border-radius: 999px;
+    background: radial-gradient(circle, var(--blob-1) 0%, transparent 68%);
+    opacity: calc(var(--blob-opacity) * 2.2);
+    filter: blur(28px);
+    pointer-events: none;
+    animation: glow-breathe 3.2s ease-in-out infinite;
+}
+
+.splash-logo {
+    position: relative;
+    width: 68px;
+    height: 68px;
+    animation: rise-in 800ms var(--ease-quint) 80ms both;
+}
+
+.splash-name {
+    position: relative;
+    margin-top: 14px;
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 26px;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    animation: rise-in 800ms var(--ease-quint) 160ms both;
+}
+
+.splash-dots {
+    position: relative;
+    display: flex;
+    gap: 9px;
+    margin-top: 20px;
+    height: 14px;
+    align-items: center;
+    animation: rise-in 800ms var(--ease-quint) 240ms both;
+}
+
+/* the dots grow and shrink one after another: a breathing wave */
+.splash-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 999px;
+    background: var(--faint);
+    animation: wave 1.25s ease-in-out infinite;
+    transition: background-color 520ms var(--ease-quint), box-shadow 520ms var(--ease-quint);
+}
+
+.splash-dot:nth-child(2) {
+    animation-delay: 160ms;
+}
+
+.splash-dot:nth-child(3) {
+    animation-delay: 320ms;
+}
+
+/* this step is loaded: green, still breathing while it waits for the others */
+.splash-dot.done {
+    background: var(--splash-green);
+    box-shadow: 0 0 10px color-mix(in srgb, var(--splash-green) 55%, transparent);
+}
+
+.leaving .splash {
+    animation: splash-out 260ms ease-in both;
+}
+
+@keyframes wave {
+    0%,
+    100% {
+        transform: scale(0.62);
+    }
+    45% {
+        transform: scale(1.28);
+    }
+}
+
+@keyframes splash-in {
+    from {
+        opacity: 0;
+        transform: scale(0.92);
+    }
+}
+
+@keyframes splash-out {
+    to {
+        opacity: 0;
+        transform: scale(0.96);
+    }
+}
+
+@keyframes rise-in {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+}
+
+@keyframes glow-breathe {
+    50% {
+        transform: scale(1.12);
+    }
+}

@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Questly · Discord quests, done quietly</title>
+  <meta name="description" content="Questly makes Discord see a game running, so quest progress ticks while you do something else. Free and open source for Windows. Try it in your browser." />
+  <meta property="og:title" content="Questly · Discord quests, done quietly" />
+  <meta property="og:description" content="Add a game, press Play, and Discord sees you playing it. Timers can wait until Discord notices before counting down." />
+  <meta property="og:image" content="/shots/library.jpg" />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="theme-color" content="#1a1916" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+</head>
+<body data-page="home">
+  <div class="site-glow" aria-hidden="true"><i></i><i></i><i></i></div>
+  <!-- include:header -->
+
+  <main id="main">
+    <!-- ===== Hero ===== -->
+    <section class="wrap pt-16 sm:pt-24 text-center">
+      <div class="reveal inline-flex items-center gap-2 chip !h-8 !px-3.5 mb-7">
+        <span class="live-dot"></span>
+        <span class="font-semibold text-ink">Questly %VERSION%</span>
+        <span class="text-muted">· free for Windows</span>
+      </div>
+      <h1 class="reveal h-display text-[clamp(52px,9vw,112px)]" style="--delay: 60ms">
+        Quests, done<br />quietly.
+      </h1>
+      <p class="reveal lede max-w-[40rem] mx-auto mt-7" style="--delay: 120ms">
+        Questly makes Discord see a game running, so your quest timer ticks while you do anything else.
+        Add the game, press Play, done. No game install, no Discord login.
+      </p>
+      <div class="reveal flex flex-wrap justify-center gap-3 mt-9" style="--delay: 180ms">
+        <a class="btn btn-primary btn-lg" href="#download">
+          <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 20h14" /></svg>
+          Download for Windows
+        </a>
+        <a class="btn btn-glass btn-lg" href="/try">
+          Try it in your browser
+          <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" /></svg>
+        </a>
+      </div>
+      <p class="reveal text-sm text-faint mt-5" style="--delay: 220ms">Open source (MIT) · Windows 10 &amp; 11 · %SIZE% · installs without admin rights</p>
+
+      <!-- screenshots of the real app -->
+      <div class="reveal relative mt-16 sm:mt-20 max-w-[1040px] mx-auto" style="--delay: 260ms">
+        <div class="shot-glow" aria-hidden="true"></div>
+        <div class="window-frame" data-shots>
+          <img class="on" src="/shots/library.jpg" alt="Questly's library: a list of games on the left, the selected game with a Play button, and what's playing now" width="1120" height="720" />
+          <img src="/shots/search.jpg" alt="Spotlight search finding Rocket League among Discord's detectable games" width="1120" height="720" loading="lazy" />
+          <img src="/shots/timer.jpg" alt="A timed run with four games, each counting down after Discord detected it" width="1120" height="720" loading="lazy" />
+          <img src="/shots/settings.jpg" alt="Settings with a blue accent re-tinting the whole app" width="1120" height="720" loading="lazy" />
+        </div>
+        <div class="seg inline-flex mt-6 !bg-[color-mix(in_srgb,var(--bg)_70%,transparent)]" role="tablist" aria-label="Screenshots" data-shot-tabs>
+          <button class="on" role="tab" aria-selected="true">Library</button>
+          <button role="tab" aria-selected="false">Search</button>
+          <button role="tab" aria-selected="false">Timed run</button>
+          <button role="tab" aria-selected="false">Settings</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== How it works ===== -->
+    <section id="how" class="section wrap">
+      <div class="grid lg:grid-cols-[1fr_1.1fr] gap-10 lg:gap-16 items-center">
+        <div class="reveal">
+          <div class="eyebrow mb-3">How it works</div>
+          <h2 class="section-title">Three steps.<br />No game needed.</h2>
+          <p class="lede mt-5 max-w-[32rem]">
+            Discord knows you're playing by spotting a game's program running on your PC. Questly starts a tiny
+            stand-in with the same file name, so Discord spots it the same way.
+          </p>
+        </div>
+        <ol class="grid gap-3">
+          <li class="reveal glass p-6 flex gap-5" style="--delay: 60ms">
+            <span class="step-no shrink-0">1</span>
+            <div>
+              <h3 class="card-title">Find the game</h3>
+              <p class="text-muted mt-1.5 leading-relaxed">Press Ctrl+K and search Discord's list of over 20,000 detectable games for the one your quest asks for.</p>
+            </div>
+          </li>
+          <li class="reveal glass p-6 flex gap-5" style="--delay: 120ms">
+            <span class="step-no shrink-0">2</span>
+            <div>
+              <h3 class="card-title">Press Play</h3>
+              <p class="text-muted mt-1.5 leading-relaxed">Questly starts the stand-in program. It doesn't need the real game, doesn't use your Discord login, and doesn't change anything inside Discord.</p>
+            </div>
+          </li>
+          <li class="reveal glass p-6 flex gap-5" style="--delay: 180ms">
+            <span class="step-no shrink-0">3</span>
+            <div class="min-w-0 flex-1">
+              <h3 class="card-title">Discord sees you playing</h3>
+              <p class="text-muted mt-1.5 leading-relaxed">Your quest starts counting. Stop whenever you like, or let a timer stop it for you.</p>
+              <div class="presence mt-4">
+                <img src="https://cdn.discordapp.com/app-icons/700136079562375258/e55fc8259df1548328f977d302779ab7.png?size=64" alt="" width="40" height="40" class="rounded-xl" loading="lazy" />
+                <div class="min-w-0">
+                  <div class="text-xs text-muted">Playing</div>
+                  <div class="font-bold text-ink">VALORANT</div>
+                </div>
+                <span class="ml-auto tag"><span class="w-1.5 h-1.5 rounded-full bg-on-accent"></span>12:04</span>
+              </div>
+            </div>
+          </li>
+        </ol>
+      </div>
+      <p class="reveal text-sm text-faint mt-6 text-center">Works for quests that ask you to play a game for a while on desktop. Quests that need streaming, a console or in-game achievements aren't covered.</p>
+    </section>
+
+    <!-- ===== Highlight: timers that wait for Discord ===== -->
+    <section class="section wrap">
+      <div class="reveal paper p-8 sm:p-12 grid md:grid-cols-[1fr_auto] gap-10 items-center overflow-hidden">
+        <div>
+          <div class="eyebrow mb-3">Timed runs</div>
+          <h2 class="section-title">Time that actually counts.</h2>
+          <p class="text-[17px] leading-relaxed mt-5 max-w-[34rem] text-ink-2">
+            Discord can take a minute to notice a game. Questly waits for it: each countdown only starts once Discord reports
+            the game, so a 15-minute timer means 15 minutes of quest progress. Run everything at once, or one after another
+            in a fixed or random order, and it all stops by itself.
+          </p>
+          <div class="flex flex-wrap gap-2 mt-6">
+            <span class="chip">All at once</span>
+            <span class="chip">One after another</span>
+            <span class="chip">Random order</span>
+            <span class="chip">Timers in seconds</span>
+          </div>
+        </div>
+        <div class="relative grid place-items-center">
+          <svg class="timer-ring" viewBox="0 0 160 160" aria-hidden="true">
+            <circle class="ring-track" cx="80" cy="80" r="70" />
+            <circle class="ring-fill" cx="80" cy="80" r="70" />
+          </svg>
+          <div class="absolute text-center">
+            <div class="display text-[34px] leading-none text-ink tabular-nums">14:32</div>
+            <div class="text-xs text-muted mt-1">left</div>
+          </div>
+          <span class="chip mt-4 !border-[var(--paper-line-strong)]">
+            <svg viewBox="0 0 16 16" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7" /></svg>
+            Discord detected it
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Features ===== -->
+    <section id="features" class="section wrap">
+      <div class="reveal max-w-[44rem]">
+        <div class="eyebrow mb-3">Features</div>
+        <h2 class="section-title">Everything a quest needs. Nothing it doesn't.</h2>
+      </div>
+      <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-12">
+        <article class="reveal glass feature">
+          <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg></div>
+          <h3 class="card-title">Search every detectable game</h3>
+          <p>Spotlight search over Discord's whole list, with fuzzy matching that stays smooth while you type. Games you already have are hidden.</p>
+        </article>
+        <article class="reveal glass feature" style="--delay: 60ms">
+          <div class="feature-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5.5v13L18 12z" /></svg></div>
+          <h3 class="card-title">One click, or all of them</h3>
+          <p>Play one game, check a few, or Launch all. Every action has a keyboard shortcut; press ? in the app to see them.</p>
+        </article>
+        <article class="reveal glass feature" style="--delay: 120ms">
+          <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="4" y="4" width="16" height="16" rx="4" /><path d="M9 9h6M9 13h4" /></svg></div>
+          <h3 class="card-title">Game windows your way</h3>
+          <p>Each game gets a small square window in Questly's style that you can drag anywhere. Keep it on screen, park it off-screen or hide it. It never steals focus.</p>
+        </article>
+        <article class="reveal glass feature">
+          <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3-8 4 16 3-8h4" /></svg></div>
+          <h3 class="card-title">Performance Guard</h3>
+          <p>During timed runs it watches CPU, memory and stutter. If your PC struggles, it closes a few games for a while and brings them back with their time left.</p>
+        </article>
+        <article class="reveal glass feature" style="--delay: 60ms">
+          <div class="feature-icon"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="3" /></svg></div>
+          <h3 class="card-title">Panic Abort</h3>
+          <p>One button or Ctrl+Shift+X stops every game, the timer and anything running in the background, then tells you exactly what it stopped.</p>
+        </article>
+        <article class="reveal glass feature" style="--delay: 120ms">
+          <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4" /><path d="M5 20c1.5-3.5 4-5 7-5s5.5 1.5 7 5" /></svg></div>
+          <h3 class="card-title">Legitimate Buddy</h3>
+          <p>While you're away, it opens a few games from your library like you would, within the hours, days and limits you set, and stops the moment you're back.</p>
+        </article>
+        <article class="reveal glass feature">
+          <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="8" /><path d="M12 4v16M4 12h8" /></svg></div>
+          <h3 class="card-title">Make it yours</h3>
+          <p>Six themes, any accent color, or a fully custom theme with a color for every part. Even the taskbar icon follows your accent.</p>
+        </article>
+        <article class="reveal glass feature" style="--delay: 60ms">
+          <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l5 5v13H7z" /><path d="M14 3v5h5" /></svg></div>
+          <h3 class="card-title">Your library is a file</h3>
+          <p>Your games live in a plain library.json you can edit by hand, export, or swap with friends. Import merges with yours or replaces it.</p>
+        </article>
+        <article class="reveal glass feature" style="--delay: 120ms">
+          <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 20h14" /></svg></div>
+          <h3 class="card-title">One file that installs itself</h3>
+          <p>The same Questly.exe installs, launches and uninstalls. Everything is per-user, so no admin rights, and removing it leaves nothing behind.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- ===== Try it ===== -->
+    <section id="try" class="section wrap">
+      <div class="reveal glass p-8 sm:p-12 grid lg:grid-cols-[1.1fr_1fr] gap-10 items-center overflow-hidden">
+        <div>
+          <div class="eyebrow mb-3">Try it first</div>
+          <h2 class="section-title">Take it for a spin, right here.</h2>
+          <p class="lede mt-5 max-w-[32rem]">
+            The real Questly interface runs in your browser on a pretend PC. Add games, press Play, start a timed run,
+            switch on heavy CPU load to watch Performance Guard step in, or step away and let Buddy play.
+            Nothing talks to Discord.
+          </p>
+          <a class="btn btn-primary btn-lg mt-8" href="/try">
+            Open the live demo
+            <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" /></svg>
+          </a>
+          <p class="text-xs text-faint mt-3">Works best on a computer. Liked it? Download it.</p>
+        </div>
+        <a href="/try" class="window-frame block !aspect-[1120/720] hover:!border-[var(--ink-2)] transition-colors" aria-label="Open the live demo">
+          <img class="on" src="/shots/timer.jpg" alt="" width="1120" height="720" loading="lazy" />
+        </a>
+      </div>
+    </section>
+
+    <!-- ===== Safety ===== -->
+    <section class="section wrap">
+      <div class="reveal grid md:grid-cols-[auto_1fr] gap-8 items-start glass p-8 sm:p-10 !border-[color-mix(in_srgb,var(--warn)_40%,transparent)]">
+        <div class="w-14 h-14 rounded-2xl grid place-items-center bg-warn-soft text-warn">
+          <svg viewBox="0 0 24 24" class="w-7 h-7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 20h20z" /><path d="M12 10v4m0 3h.01" /></svg>
+        </div>
+        <div>
+          <h2 class="card-title !text-[26px]">Your account, your responsibility.</h2>
+          <p class="text-ink-2 leading-relaxed mt-3 max-w-[48rem]">
+            Making Discord believe you're playing a game you aren't goes against Discord's Terms of Service. Discord can
+            take quest rewards back, warn you, or suspend or ban your account. Questly isn't made by or affiliated with
+            Discord, and nobody behind Questly is responsible for what happens to your account. The app asks you to
+            accept this before you can use it.
+          </p>
+          <p class="text-ink-2 leading-relaxed mt-3 max-w-[48rem]">
+            What Questly never does: ask for your Discord login, read your token or saved sign-in, or change Discord's files.
+            It's open source, so you can check.
+          </p>
+          <div class="flex flex-wrap gap-2 mt-5">
+            <a class="btn btn-glass btn-sm" href="/terms-of-use">Read the Terms of Use</a>
+            <a class="btn btn-link btn-sm" href="/privacy">Privacy Policy</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Download ===== -->
+    <section id="download" class="section wrap">
+      <div class="reveal paper p-8 sm:p-12 grid lg:grid-cols-[1.2fr_1fr] gap-12">
+        <div>
+          <div class="eyebrow mb-3">Download</div>
+          <h2 class="section-title">Questly for Windows.</h2>
+          <p class="text-[17px] leading-relaxed mt-5 max-w-[30rem] text-ink-2">
+            One file. Open it, click Install, accept the notice, and you're set. It adds a Start menu entry and a desktop
+            shortcut, and appears in Apps &amp; features for a clean uninstall.
+          </p>
+          <div class="flex flex-wrap gap-3 mt-8">
+            <a class="btn btn-primary btn-lg" href="%DOWNLOAD_URL%">
+              <svg viewBox="0 0 24 24" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 20h14" /></svg>
+              Download Questly.exe
+            </a>
+            <a class="btn btn-glass btn-lg" href="%REPO_URL%" target="_blank" rel="noopener">View the source</a>
+          </div>
+          <p class="text-sm text-muted mt-6 max-w-[30rem] leading-relaxed">
+            <strong class="text-ink">Windows may warn you</strong> ("Windows protected your PC") because Questly isn't
+            code-signed yet. Click <em>More info</em>, then <em>Run anyway</em>. If you'd rather check first, the source
+            is on GitHub and you can build it yourself.
+          </p>
+        </div>
+        <div class="grid gap-6 content-start">
+          <dl class="spec">
+            <dt>Version</dt><dd>%VERSION% · %RELEASE_DATE%</dd>
+            <dt>Size</dt><dd>%SIZE%</dd>
+            <dt>Needs</dt><dd>Windows 10 or 11 (64-bit) and the Discord desktop app</dd>
+            <dt>Installs to</dt><dd><code class="text-[13px]">%LOCALAPPDATA%\Programs\Questly</code></dd>
+            <dt>SHA-256</dt>
+            <dd class="flex items-start gap-2"><code class="text-[12px] leading-snug break-all">%SHA256%</code><button class="chip !h-6 shrink-0" type="button" data-copy="%SHA256%">Copy</button></dd>
+          </dl>
+          <div class="text-sm text-muted leading-relaxed">
+            By downloading you agree to the <a class="underline decoration-2 underline-offset-2" href="/terms">Terms of Service</a>
+            and <a class="underline decoration-2 underline-offset-2" href="/terms-of-use">Terms of Use</a>.
+            <a class="underline decoration-2 underline-offset-2" href="%REPO_URL%/releases" target="_blank" rel="noopener">All releases</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== FAQ ===== -->
+    <section id="faq" class="section wrap">
+      <div class="grid lg:grid-cols-[0.8fr_1.2fr] gap-10">
+        <div class="reveal">
+          <div class="eyebrow mb-3">FAQ</div>
+          <h2 class="section-title">Good questions.</h2>
+        </div>
+        <div class="reveal faq">
+          <details>
+            <summary>Is it free?<span class="plus"><svg viewBox="0 0 12 12" class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 1.5v9M1.5 6h9" /></svg></span></summary>
+            <div class="answer">Yes. Questly is free and open source under the MIT License. There are no accounts, ads or paid features.</div>
+          </details>
+          <details>
+            <summary>Can it get my Discord account banned?<span class="plus"><svg viewBox="0 0 12 12" class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 1.5v9M1.5 6h9" /></svg></span></summary>
+            <div class="answer">It can. Pretending to play a game breaks Discord's Terms of Service, and Discord may remove rewards, warn, suspend or ban accounts that do it. Questly can't prevent that, and makes no promise that it won't happen. Only use it if you accept that risk.</div>
+          </details>
+          <details>
+            <summary>Does Questly need my Discord login or token?<span class="plus"><svg viewBox="0 0 12 12" class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 1.5v9M1.5 6h9" /></svg></span></summary>
+            <div class="answer">No. It never asks for your account and never reads Discord's saved sign-in data. To know when Discord has picked up a game, it reads one kind of line from Discord's own log file on your PC, and nothing from that file leaves your computer.</div>
+          </details>
+          <details>
+            <summary>Which quests does it work for?<span class="plus"><svg viewBox="0 0 12 12" class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 1.5v9M1.5 6h9" /></svg></span></summary>
+            <div class="answer">Quests that ask you to play a desktop game for some time. Quests that require streaming to friends, playing on a console, or doing something inside the game aren't covered, and Discord can change how quests work at any time.</div>
+          </details>
+          <details>
+            <summary>Why does Windows warn me when I open it?<span class="plus"><svg viewBox="0 0 12 12" class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 1.5v9M1.5 6h9" /></svg></span></summary>
+            <div class="answer">Questly isn't code-signed yet, and Windows SmartScreen warns about unsigned apps it hasn't seen much. Click <em>More info</em> → <em>Run anyway</em>. You can compare the file's SHA-256 with the one on this page, or build Questly yourself from the source.</div>
+          </details>
+          <details>
+            <summary>Does it work on Mac or Linux?<span class="plus"><svg viewBox="0 0 12 12" class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 1.5v9M1.5 6h9" /></svg></span></summary>
+            <div class="answer">Not yet. Questly is built for Windows 10 and 11. The live demo works in any modern browser.</div>
+          </details>
+          <details>
+            <summary>Where is my data kept?<span class="plus"><svg viewBox="0 0 12 12" class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 1.5v9M1.5 6h9" /></svg></span></summary>
+            <div class="answer">Only on your PC: your games in <code>%APPDATA%\Questly\library.json</code>, the stand-in programs in <code>%LOCALAPPDATA%\Questly</code>, and your settings inside the app. See the <a class="underline decoration-2 underline-offset-2" href="/privacy">Privacy Policy</a> for everything it reads and connects to.</div>
+          </details>
+          <details>
+            <summary>How do I uninstall it?<span class="plus"><svg viewBox="0 0 12 12" class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 1.5v9M1.5 6h9" /></svg></span></summary>
+            <div class="answer">In Questly, go to Settings → Installation → Uninstall, or use Windows Settings → Apps → Installed apps → Questly. You can choose to remove your library and settings too.</div>
+          </details>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- include:footer -->
+  <script type="module" src="/src/pages/home.ts"></script>
+</body>
+</html>

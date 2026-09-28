@@ -1,0 +1,34 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Capability for the main window and the startup splash",
+  "windows": [
+    "main",
+    "splash"
+  ],
+  "permissions": [
+    "core:default",
+    "core:window:allow-start-dragging",
+    "core:window:allow-minimize",
+    "core:window:allow-close",
+    "opener:default",
+    {
+      "identifier": "http:default",
+      "allow": [
+        {
+          "url": "https://markterence.github.io"
+        },
+        {
+          "url": "https://discord.com"
+        },
+        {
+          "url": "http://asset.localhost"
+        },
+        {
+          "url": " http://tauri.localhost"
+        }
+      ]
+    },
+    "dialog:default"
+  ]
+}

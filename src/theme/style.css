@@ -1,0 +1,765 @@
+@import "tailwindcss";
+
+/*
+ * Questly design tokens. Flat, warm and editorial: a near-black canvas,
+ * solid dark cards with hairline borders, cream "paper" cards for the things
+ * that matter, heavy Archivo headlines and pill buttons. The only gradient
+ * is the soft blurred glow behind everything (AppBackground.vue).
+ *
+ * Inside an element with the `paper` class the ink/surface tokens flip, so
+ * any component placed on a cream card adapts automatically.
+ * The active theme is set as <html data-theme="..."> by src/theme/themes.ts.
+ */
+:root,
+:root[data-theme="espresso"] {
+    color-scheme: dark;
+    --bg: #1a1916;
+    --blob-1: #cfdd7a;
+    --blob-2: #e0a458;
+    --blob-3: #8a6f4d;
+    --blob-4: #6f7d4a;
+    --blob-opacity: 0.2;
+
+    /* surfaces */
+    --glass: #211f1c;
+    --glass-2: #2a2824;
+    --glass-3: #34312c;
+    --line: #34312c;
+    --line-strong: #4a4640;
+    --highlight: transparent;
+    --ink: #f2ece0;
+    --ink-2: #c8c0b2;
+    --muted: #9a9285;
+    --faint: #6e685e;
+
+    /* cream paper cards */
+    --paper: #efe7d7;
+    --paper-ink: #1a1916;
+    --paper-ink-2: #3d382f;
+    --paper-muted: #4f493f;
+    --paper-faint: #857c6c;
+    --paper-fill: rgba(26, 25, 22, 0.06);
+    --paper-fill-2: rgba(26, 25, 22, 0.1);
+    --paper-line: rgba(26, 25, 22, 0.14);
+    --paper-line-strong: rgba(26, 25, 22, 0.28);
+    --paper-ok: #3f7d2a;
+    --paper-warn: #8a5a00;
+    --paper-danger: #b3321f;
+
+    /* the highlight color (discount-badge lime) */
+    --accent: #cfdd7a;
+    --accent-2: #cfdd7a;
+    --accent-soft: rgba(207, 221, 122, 0.14);
+    --on-accent: #1a1916;
+
+    /* primary pill: cream on dark, dark on cream */
+    --btn: #efe7d7;
+    --btn-hover: #faf4e8;
+    --btn-ink: #1a1916;
+
+    --ok: #a8d68a;
+    --ok-soft: rgba(168, 214, 138, 0.14);
+    --danger: #f07c6c;
+    --danger-soft: rgba(240, 124, 108, 0.14);
+    --warn: #f2c46d;
+    --warn-soft: rgba(242, 196, 109, 0.14);
+    --shadow: 0 18px 40px -24px rgba(0, 0, 0, 0.7);
+    --radius: 18px;
+    --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+    --ease-quint: cubic-bezier(0.23, 1, 0.32, 1);
+    --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+:root[data-theme="midnight"] {
+    --bg: #111419;
+    --blob-1: #8ecbff;
+    --blob-2: #6f7dd6;
+    --blob-3: #3d5a80;
+    --blob-4: #7fd6b5;
+    --glass: #181c23;
+    --glass-2: #20252e;
+    --glass-3: #2a303b;
+    --line: #2a303b;
+    --line-strong: #3d4552;
+    --ink: #e8eef7;
+    --ink-2: #b8c2d2;
+    --muted: #8691a3;
+    --faint: #5d6778;
+    --paper: #dfe7f2;
+    --paper-ink: #111419;
+    --paper-ink-2: #2e3542;
+    --paper-muted: #465062;
+    --paper-faint: #768195;
+    --accent: #8ecbff;
+    --accent-2: #8ecbff;
+    --accent-soft: rgba(142, 203, 255, 0.14);
+    --on-accent: #0e1520;
+    --btn: #dfe7f2;
+    --btn-hover: #eef3fa;
+    --btn-ink: #111419;
+}
+
+:root[data-theme="moss"] {
+    --bg: #141813;
+    --blob-1: #b5d86a;
+    --blob-2: #6fae7f;
+    --blob-3: #4d6b3e;
+    --blob-4: #d6c56a;
+    --glass: #1b2019;
+    --glass-2: #232a21;
+    --glass-3: #2d352a;
+    --line: #2d352a;
+    --line-strong: #414c3d;
+    --ink: #eaf0dc;
+    --ink-2: #c2cbb0;
+    --muted: #8f9a80;
+    --faint: #647058;
+    --paper: #e4ebd2;
+    --paper-ink: #141813;
+    --paper-ink-2: #313a2c;
+    --paper-muted: #4a5642;
+    --paper-faint: #7a876d;
+    --accent: #b5d86a;
+    --accent-2: #b5d86a;
+    --accent-soft: rgba(181, 216, 106, 0.14);
+    --btn: #e4ebd2;
+    --btn-hover: #f0f5e2;
+    --btn-ink: #141813;
+}
+
+:root[data-theme="clay"] {
+    --bg: #1c1613;
+    --blob-1: #f29e6d;
+    --blob-2: #d9765f;
+    --blob-3: #8a5a44;
+    --blob-4: #e8c07a;
+    --glass: #241c18;
+    --glass-2: #2e2520;
+    --glass-3: #3a2f29;
+    --line: #3a2f29;
+    --line-strong: #52443b;
+    --ink: #f5e9df;
+    --ink-2: #d2c0b3;
+    --muted: #a38f81;
+    --faint: #75645a;
+    --paper: #f1dfcf;
+    --paper-ink: #1c1613;
+    --paper-ink-2: #3f332b;
+    --paper-muted: #5a4a3f;
+    --paper-faint: #8c7869;
+    --accent: #f29e6d;
+    --accent-2: #f29e6d;
+    --accent-soft: rgba(242, 158, 109, 0.15);
+    --btn: #f1dfcf;
+    --btn-hover: #fbece0;
+    --btn-ink: #1c1613;
+}
+
+:root[data-theme="mono"] {
+    --bg: #131313;
+    --blob-1: #9a9a9a;
+    --blob-2: #5c5c5c;
+    --blob-3: #3a3a3a;
+    --blob-4: #7a7a7a;
+    --blob-opacity: 0.16;
+    --glass: #1b1b1b;
+    --glass-2: #242424;
+    --glass-3: #2e2e2e;
+    --line: #2e2e2e;
+    --line-strong: #444444;
+    --ink: #f0f0f0;
+    --ink-2: #c4c4c4;
+    --muted: #939393;
+    --faint: #666666;
+    --paper: #ececec;
+    --paper-ink: #131313;
+    --paper-ink-2: #333333;
+    --paper-muted: #4d4d4d;
+    --paper-faint: #7d7d7d;
+    --accent: #f0f0f0;
+    --accent-2: #f0f0f0;
+    --accent-soft: rgba(240, 240, 240, 0.1);
+    --on-accent: #131313;
+    --btn: #ececec;
+    --btn-hover: #ffffff;
+    --btn-ink: #131313;
+}
+
+/* Light: cream canvas, and the "paper" cards invert to ink */
+:root[data-theme="paper"] {
+    color-scheme: light;
+    --bg: #ebe3d2;
+    --blob-1: #cfdd7a;
+    --blob-2: #f2c46d;
+    --blob-3: #e0a458;
+    --blob-4: #b8c98a;
+    --blob-opacity: 0.35;
+    --glass: #f3ecdf;
+    --glass-2: #e8dfcd;
+    --glass-3: #ddd3bf;
+    --line: #dcd2be;
+    --line-strong: #c4b9a3;
+    --ink: #1a1916;
+    --ink-2: #3d382f;
+    --muted: #6b6356;
+    --faint: #968d7d;
+    --paper: #1a1916;
+    --paper-ink: #efe7d7;
+    --paper-ink-2: #c8c0b2;
+    --paper-muted: #9a9285;
+    --paper-faint: #6e685e;
+    --paper-fill: rgba(239, 231, 215, 0.07);
+    --paper-fill-2: rgba(239, 231, 215, 0.12);
+    --paper-line: rgba(239, 231, 215, 0.14);
+    --paper-line-strong: rgba(239, 231, 215, 0.28);
+    --paper-ok: #a8d68a;
+    --paper-warn: #f2c46d;
+    --paper-danger: #f07c6c;
+    --accent: #5e6b1f;
+    --accent-2: #5e6b1f;
+    --accent-soft: rgba(94, 107, 31, 0.12);
+    --on-accent: #f3ecdf;
+    --btn: #1a1916;
+    --btn-hover: #2e2c27;
+    --btn-ink: #efe7d7;
+    --ok: #3f7d2a;
+    --ok-soft: rgba(63, 125, 42, 0.12);
+    --danger: #b93b2a;
+    --danger-soft: rgba(185, 59, 42, 0.1);
+    --warn: #9a6a0c;
+    --warn-soft: rgba(154, 106, 12, 0.12);
+    --shadow: 0 18px 40px -26px rgba(60, 45, 20, 0.35);
+}
+
+/*
+ * Settings > Accent: themes.ts re-tints the whole palette from the chosen
+ * accent and sets these --user-* values, already adjusted for contrast.
+ * Here they become the accent and the primary button color (active tab,
+ * selections, Play...), separately for dark surfaces and for paper cards.
+ * Unlayered and after the themes, so it wins over both.
+ */
+:root.custom-accent {
+    --accent: var(--user-accent);
+    --accent-2: var(--user-accent);
+    --accent-soft: var(--user-accent-soft);
+    --on-accent: var(--user-on-accent);
+    --btn: var(--user-accent);
+    --btn-hover: var(--user-accent-hover);
+    --btn-ink: var(--user-on-accent);
+}
+
+.custom-accent .paper {
+    --accent: var(--user-accent-paper);
+    --accent-2: var(--user-accent-paper);
+    --accent-soft: var(--user-accent-paper-soft);
+    --on-accent: var(--user-on-accent-paper);
+    --btn: var(--user-accent-paper);
+    --btn-hover: var(--user-accent-paper-hover);
+    --btn-ink: var(--user-on-accent-paper);
+}
+
+/* The logo always uses the app-level accent (resolved here, on the root),
+   even on paper cards, so it matches the taskbar and tray icon. */
+:root {
+    --logo-fill: var(--accent);
+    --logo-glyph: var(--on-accent);
+}
+
+@theme inline {
+    --color-bg: var(--bg);
+    --color-glass: var(--glass);
+    --color-glass-2: var(--glass-2);
+    --color-glass-3: var(--glass-3);
+    --color-line: var(--line);
+    --color-line-strong: var(--line-strong);
+    --color-ink: var(--ink);
+    --color-ink-2: var(--ink-2);
+    --color-muted: var(--muted);
+    --color-faint: var(--faint);
+    --color-accent: var(--accent);
+    --color-accent-soft: var(--accent-soft);
+    --color-on-accent: var(--on-accent);
+    --color-ok: var(--ok);
+    --color-ok-soft: var(--ok-soft);
+    --color-danger: var(--danger);
+    --color-danger-soft: var(--danger-soft);
+    --color-warn: var(--warn);
+    --color-warn-soft: var(--warn-soft);
+    --font-sans: "Archivo Variable", Archivo, "Segoe UI", system-ui, sans-serif;
+    --font-display: "Archivo Variable", Archivo, "Segoe UI", system-ui, sans-serif;
+    --font-mono: "Cascadia Mono", "Cascadia Code", Consolas, ui-monospace, monospace;
+}
+
+/* Layered so Tailwind utilities can override these */
+@layer base {
+    html,
+    body {
+        height: 100%;
+        overflow: hidden;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: var(--font-sans);
+        font-size: 15px;
+        -webkit-font-smoothing: antialiased;
+        user-select: none;
+        cursor: default;
+    }
+
+    input,
+    textarea,
+    .selectable {
+        user-select: text;
+    }
+
+    ::selection {
+        background: var(--accent);
+        color: var(--on-accent);
+    }
+
+    /* slim scrollbar that only shows on hover */
+    ::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: transparent;
+        border: 3px solid transparent;
+        border-radius: 999px;
+        background-clip: padding-box;
+    }
+
+    *:hover::-webkit-scrollbar-thumb {
+        background-color: var(--line-strong);
+    }
+
+    :focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+    }
+
+    button {
+        cursor: default;
+    }
+}
+
+@layer components {
+    /* Dark card with a hairline border (a slight see-through lets the glow show) */
+    .glass {
+        position: relative;
+        /* the custom theme can change how see-through and blurry cards are */
+        background: color-mix(in srgb, var(--glass) var(--glass-alpha, 90%), transparent);
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        backdrop-filter: blur(var(--glass-blur, 24px));
+        -webkit-backdrop-filter: blur(var(--glass-blur, 24px));
+    }
+
+    /* Cream card: flips the ink/surface tokens for everything inside */
+    .paper {
+        --ink: var(--paper-ink);
+        --ink-2: var(--paper-ink-2);
+        --muted: var(--paper-muted);
+        --faint: var(--paper-faint);
+        --glass: var(--paper-fill);
+        --glass-2: var(--paper-fill);
+        --glass-3: var(--paper-fill-2);
+        --line: var(--paper-line);
+        --line-strong: var(--paper-line-strong);
+        --accent: var(--paper-ink);
+        --accent-soft: var(--paper-fill-2);
+        --on-accent: var(--paper);
+        --btn: var(--paper-ink);
+        --btn-hover: var(--paper-ink-2);
+        --btn-ink: var(--paper);
+        --ok: var(--paper-ok);
+        --warn: var(--paper-warn);
+        --danger: var(--paper-danger);
+        --ok-soft: color-mix(in srgb, var(--paper-ok) 14%, transparent);
+        --warn-soft: color-mix(in srgb, var(--paper-warn) 14%, transparent);
+        --danger-soft: color-mix(in srgb, var(--paper-danger) 12%, transparent);
+        position: relative;
+        background: var(--paper);
+        color: var(--paper-ink);
+        border-radius: var(--radius);
+    }
+
+    .eyebrow,
+    .section-label {
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+    }
+
+    .display {
+        font-family: var(--font-display);
+        font-weight: 800;
+        letter-spacing: -0.02em;
+    }
+
+    .btn {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.45rem;
+        height: 2.5rem;
+        padding: 0 1.15rem;
+        border-radius: 999px;
+        border: 1px solid transparent;
+        font-size: 0.9375rem;
+        font-weight: 600;
+        white-space: nowrap;
+        transition: transform 220ms var(--ease-spring), background-color 160ms ease, color 160ms ease,
+            border-color 160ms ease, opacity 160ms ease;
+    }
+
+    .btn:active:not(:disabled) {
+        transform: scale(0.96);
+        transition-duration: 80ms;
+    }
+
+    .btn:disabled {
+        opacity: 0.4;
+    }
+
+    .btn-sm {
+        height: 2.125rem;
+        padding: 0 0.9rem;
+        font-size: 0.84rem;
+    }
+
+    .btn-primary {
+        background: var(--btn);
+        border-color: var(--btn);
+        color: var(--btn-ink);
+    }
+
+    .btn-primary:hover:not(:disabled) {
+        background: var(--btn-hover);
+        border-color: var(--btn-hover);
+    }
+
+    /* outlined pill */
+    .btn-glass,
+    .btn-secondary,
+    .btn-ghost {
+        background: transparent;
+        border-color: var(--line-strong);
+        color: var(--ink);
+    }
+
+    .btn-glass:hover:not(:disabled),
+    .btn-secondary:hover:not(:disabled),
+    .btn-ghost:hover:not(:disabled) {
+        background: var(--glass-2);
+    }
+
+    .btn-accent {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: var(--on-accent);
+    }
+
+    .btn-accent:hover:not(:disabled) {
+        filter: brightness(1.06);
+    }
+
+    .btn-danger {
+        background: transparent;
+        border-color: color-mix(in srgb, var(--danger) 55%, transparent);
+        color: var(--danger);
+    }
+
+    .btn-danger:hover:not(:disabled) {
+        background: var(--danger);
+        border-color: var(--danger);
+        color: var(--bg);
+    }
+
+    .btn-link {
+        background: transparent;
+        color: var(--muted);
+        padding: 0 0.6rem;
+    }
+
+    .btn-link:hover:not(:disabled) {
+        color: var(--ink);
+    }
+
+    .icon-btn {
+        display: inline-grid;
+        place-items: center;
+        width: 2.25rem;
+        height: 2.25rem;
+        border-radius: 999px;
+        color: var(--ink-2);
+        transition: background-color 150ms ease, color 150ms ease, transform 220ms var(--ease-spring);
+    }
+
+    .icon-btn:hover:not(:disabled) {
+        background: var(--glass-2);
+        color: var(--ink);
+    }
+
+    .icon-btn:active:not(:disabled) {
+        transform: scale(0.88);
+    }
+
+    .icon-btn:disabled {
+        opacity: 0.35;
+    }
+
+    .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        height: 1.625rem;
+        padding: 0 0.65rem;
+        border-radius: 999px;
+        border: 1px solid var(--line-strong);
+        font-size: 0.78rem;
+        font-weight: 500;
+        color: var(--ink-2);
+        white-space: nowrap;
+    }
+
+    /* filled accent pill: same shape as .chip so they sit together evenly */
+    .tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        height: 1.625rem;
+        padding: 0 0.65rem;
+        border-radius: 999px;
+        border: 1px solid var(--accent);
+        background: var(--accent);
+        color: var(--on-accent);
+        font-size: 0.78rem;
+        font-weight: 700;
+        white-space: nowrap;
+    }
+
+    .kbd {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 1.4rem;
+        height: 1.4rem;
+        padding: 0 0.35rem;
+        border-radius: 6px;
+        border: 1px solid var(--line-strong);
+        color: var(--ink-2);
+        font-family: var(--font-sans);
+        font-size: 0.72rem;
+        font-weight: 600;
+        line-height: 1;
+    }
+
+    .field {
+        height: 2.5rem;
+        padding: 0 0.9rem;
+        border-radius: 999px;
+        border: 1px solid var(--line-strong);
+        background: transparent;
+        color: var(--ink);
+        outline: none;
+        transition: border-color 150ms ease;
+    }
+
+    .field:focus,
+    .field:focus-within {
+        border-color: var(--ink-2);
+    }
+
+    /* Tooltips: add data-tip="…" (+ optional data-tip-pos="bottom") to any
+       element; TooltipLayer.vue draws them above everything, kept inside the window. */
+
+    .live-dot {
+        position: relative;
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: var(--accent);
+        flex-shrink: 0;
+    }
+
+    .live-dot::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        background: var(--accent);
+        animation: live-ping 1.8s var(--ease-out) infinite;
+    }
+
+    .wait-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: var(--warn);
+        flex-shrink: 0;
+        animation: breathe 1.4s ease-in-out infinite;
+    }
+
+    @keyframes live-ping {
+        0% {
+            transform: scale(1);
+            opacity: 0.7;
+        }
+        100% {
+            transform: scale(2.8);
+            opacity: 0;
+        }
+    }
+
+    @keyframes breathe {
+        0%,
+        100% {
+            opacity: 0.35;
+            transform: scale(0.8);
+        }
+        50% {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+    }
+
+    .spinner {
+        width: 14px;
+        height: 14px;
+        border-radius: 999px;
+        border: 2px solid currentColor;
+        border-right-color: transparent;
+        animation: spin 700ms linear infinite;
+        flex-shrink: 0;
+    }
+
+    @keyframes spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    /* segmented control: outlined pill with a solid active pill */
+    .seg {
+        display: flex;
+        gap: 2px;
+        padding: 3px;
+        border-radius: 999px;
+        border: 1px solid var(--line-strong);
+    }
+
+    .seg > button {
+        flex: 1;
+        height: 2rem;
+        padding: 0 0.85rem;
+        border-radius: 999px;
+        font-size: 0.84rem;
+        font-weight: 600;
+        color: var(--ink-2);
+        white-space: nowrap;
+        transition: background-color 220ms ease, color 220ms ease;
+    }
+
+    .seg > button:hover {
+        color: var(--ink);
+    }
+
+    .seg > button.on {
+        background: var(--btn);
+        color: var(--btn-ink);
+    }
+}
+
+/* ---------- Vue transition presets ---------- */
+
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity 200ms ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+    opacity: 0;
+}
+
+.pop-enter-active {
+    transition: opacity 200ms ease, transform 320ms var(--ease-spring);
+}
+
+.pop-leave-active {
+    transition: opacity 140ms ease, transform 140ms ease;
+}
+
+.pop-enter-from,
+.pop-leave-to {
+    opacity: 0;
+    transform: scale(0.9);
+}
+
+.rise-enter-active {
+    transition: opacity 260ms ease, transform 520ms var(--ease-quint);
+}
+
+.rise-leave-active {
+    transition: opacity 150ms ease, transform 150ms ease;
+}
+
+.rise-enter-from {
+    opacity: 0;
+    transform: translateY(14px);
+}
+
+.rise-leave-to {
+    opacity: 0;
+    transform: translateY(-6px);
+}
+
+/* List items: enter, leave and smooth reordering (TransitionGroup) */
+.list-move,
+.list-enter-active {
+    transition: opacity 260ms ease, transform 480ms var(--ease-quint);
+}
+
+.list-leave-active {
+    transition: opacity 180ms ease, transform 220ms ease;
+    position: absolute;
+    left: 0;
+    right: 0;
+}
+
+.list-enter-from {
+    opacity: 0;
+    transform: translateY(8px);
+}
+
+.list-leave-to {
+    opacity: 0;
+    transform: scale(0.97);
+}
+
+/* Settings > Reduce motion (and the OS setting) */
+.reduce-motion *,
+.reduce-motion *::before,
+.reduce-motion *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 1ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 1ms !important;
+    }
+}

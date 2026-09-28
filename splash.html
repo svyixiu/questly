@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Questly</title>
+  </head>
+
+  <body class="splash-body">
+    <!-- Startup splash: the logo, the name, and three dots that breathe in a
+         wave and turn green one by one as the app finishes loading -->
+    <main class="splash" data-tauri-drag-region>
+      <div class="splash-glow" aria-hidden="true"></div>
+      <svg class="splash-logo" viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="1" y="1" width="22" height="22" rx="7" fill="var(--logo-fill)" />
+        <circle cx="11.2" cy="11.2" r="4.9" fill="none" stroke="var(--logo-glyph)" stroke-width="2.7" />
+        <path d="M14.6 14.6 17.6 17.6" stroke="var(--logo-glyph)" stroke-width="2.7" stroke-linecap="round" />
+      </svg>
+      <div class="splash-name">Questly</div>
+      <div class="splash-dots" role="progressbar" aria-label="Loading" aria-valuemin="0" aria-valuemax="3" aria-valuenow="0">
+        <span class="splash-dot"></span>
+        <span class="splash-dot"></span>
+        <span class="splash-dot"></span>
+      </div>
+    </main>
+    <script type="module" src="/src/splash.ts"></script>
+  </body>
+</html>

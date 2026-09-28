@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Try Questly in your browser</title>
+  <meta name="description" content="The real Questly interface running in your browser on a simulated PC. Add games, start timers, try Performance Guard and Legitimate Buddy. Nothing talks to Discord." />
+  <meta property="og:title" content="Try Questly in your browser" />
+  <meta property="og:image" content="/shots/timer.jpg" />
+  <meta name="theme-color" content="#1a1916" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+</head>
+<body data-page="try" class="try-body">
+  <!-- ===== demo bar ===== -->
+  <header class="demo-bar">
+    <a href="/" class="brand" aria-label="Back to the Questly website">
+      <svg class="logo" viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="1" y="1" width="22" height="22" rx="7" fill="var(--logo-fill)" />
+        <circle cx="11.2" cy="11.2" r="4.9" fill="none" stroke="var(--logo-glyph)" stroke-width="2.7" />
+        <path d="M14.6 14.6 17.6 17.6" stroke="var(--logo-glyph)" stroke-width="2.7" stroke-linecap="round" />
+      </svg>
+      <span class="display brand-name">Questly</span>
+    </a>
+    <span class="tag !h-6">Live demo</span>
+    <span class="bar-note">A pretend PC: nothing here talks to Discord.</span>
+
+    <div class="bar-controls" role="group" aria-label="Simulation">
+      <button class="sim" type="button" data-sim="discord" aria-pressed="true"
+        title="Is Discord open on the pretend PC? Turn it off to see timers wait for Discord to notice a game.">
+        <span class="sim-dot"></span>Discord running
+      </button>
+      <button class="sim" type="button" data-sim="heavy" aria-pressed="false"
+        title="Pretend the PC is struggling. During a timed run, Performance Guard closes games for a while and brings them back.">
+        <span class="sim-dot"></span>Heavy CPU load
+      </button>
+      <button class="sim" type="button" data-sim="away" aria-pressed="false"
+        title="Pretend you walked away. With Legitimate Buddy on (Settings), it starts playing games; turn this off and it stops.">
+        <span class="sim-dot"></span>I'm away
+      </button>
+    </div>
+    <button class="btn btn-link btn-sm" type="button" data-reset title="Start over with a fresh demo">Reset</button>
+    <a class="btn btn-primary btn-sm" href="/#download">Download</a>
+  </header>
+
+  <!-- ===== the pretend desktop ===== -->
+  <main class="desktop" data-desktop>
+    <div class="desk-glow" aria-hidden="true"><i></i><i></i></div>
+
+    <button class="desk-icon" type="button" data-desk-icon hidden aria-label="Open Questly">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="1" y="1" width="22" height="22" rx="7" fill="var(--icon-fill, var(--logo-fill))" />
+        <circle cx="11.2" cy="11.2" r="4.9" fill="none" stroke="var(--icon-glyph, var(--logo-glyph))" stroke-width="2.7" />
+        <path d="M14.6 14.6 17.6 17.6" stroke="var(--icon-glyph, var(--logo-glyph))" stroke-width="2.7" stroke-linecap="round" />
+      </svg>
+      <span>Questly</span>
+    </button>
+    <div class="desk-hint paper" data-desk-hint hidden>You quit Questly. Click its icon to open it again.</div>
+
+    <aside class="tips glass" data-tips hidden>
+      <div class="flex items-center justify-between mb-2">
+        <div class="eyebrow">Things to try</div>
+        <button class="icon-btn !w-7 !h-7" type="button" data-tips-close aria-label="Hide tips">
+          <svg viewBox="0 0 12 12" class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 3l6 6M9 3l-6 6" /></svg>
+        </button>
+      </div>
+      <ol>
+        <li>Press <span class="kbd">Ctrl</span> <span class="kbd">K</span> and add a game.</li>
+        <li>Press Play and watch Discord "detect" it a few seconds later.</li>
+        <li>Start a timed run with <span class="kbd">Ctrl</span> <span class="kbd">T</span>, then switch on <strong>Heavy CPU load</strong>.</li>
+        <li>Settings → Accent: the taskbar icon changes too.</li>
+        <li>Turn on Legitimate Buddy in Settings, then switch on <strong>I'm away</strong>.</li>
+        <li><span class="kbd">Ctrl</span> <span class="kbd">Shift</span> <span class="kbd">X</span> is Panic Abort.</li>
+      </ol>
+    </aside>
+
+    <div class="win" data-win>
+      <iframe src="/app.html" title="Questly (live demo)" data-frame allow="clipboard-write"></iframe>
+    </div>
+
+    <div class="try-splash" data-splash>
+      <div class="splash">
+        <div class="splash-glow" aria-hidden="true"></div>
+        <svg class="splash-logo" viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="1" y="1" width="22" height="22" rx="7" fill="var(--logo-fill)" />
+          <circle cx="11.2" cy="11.2" r="4.9" fill="none" stroke="var(--logo-glyph)" stroke-width="2.7" />
+          <path d="M14.6 14.6 17.6 17.6" stroke="var(--logo-glyph)" stroke-width="2.7" stroke-linecap="round" />
+        </svg>
+        <div class="splash-name">Questly</div>
+        <div class="splash-dots" role="progressbar" aria-label="Loading" aria-valuemin="0" aria-valuemax="3" aria-valuenow="0">
+          <span class="splash-dot"></span><span class="splash-dot"></span><span class="splash-dot"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="cards" data-cards></div>
+
+    <div class="tray-note paper" data-tray-note hidden>Questly is still running. Click its icon in the tray to bring it back.</div>
+    <div class="tray-menu paper" data-tray-menu hidden role="menu">
+      <button role="menuitem" data-menu="show">Show window</button>
+      <button role="menuitem" data-menu="stop">Stop all games</button>
+      <hr />
+      <button role="menuitem" data-menu="hide-games">Hide game windows</button>
+      <button role="menuitem" data-menu="show-games">Show game windows</button>
+      <hr />
+      <button role="menuitem" data-menu="quit">Quit</button>
+    </div>
+  </main>
+
+  <!-- ===== taskbar ===== -->
+  <footer class="taskbar">
+    <div class="task-center">
+      <button class="task-app" type="button" data-task-app hidden aria-label="Questly">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="1" y="1" width="22" height="22" rx="7" fill="var(--icon-fill, var(--logo-fill))" />
+          <circle cx="11.2" cy="11.2" r="4.9" fill="none" stroke="var(--icon-glyph, var(--logo-glyph))" stroke-width="2.7" />
+          <path d="M14.6 14.6 17.6 17.6" stroke="var(--icon-glyph, var(--logo-glyph))" stroke-width="2.7" stroke-linecap="round" />
+        </svg>
+      </button>
+    </div>
+    <div class="task-tray">
+      <span class="tray-games" data-tray-games hidden></span>
+      <button class="tray-icon" type="button" data-tray hidden aria-label="Questly tray icon (right-click for the menu)" title="Questly">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="1" y="1" width="22" height="22" rx="7" fill="var(--icon-fill, var(--logo-fill))" />
+          <circle cx="11.2" cy="11.2" r="4.9" fill="none" stroke="var(--icon-glyph, var(--logo-glyph))" stroke-width="2.7" />
+          <path d="M14.6 14.6 17.6 17.6" stroke="var(--icon-glyph, var(--logo-glyph))" stroke-width="2.7" stroke-linecap="round" />
+        </svg>
+      </button>
+      <span class="clock" data-clock></span>
+    </div>
+  </footer>
+
+  <!-- ===== small screens ===== -->
+  <div class="small-screen" data-small hidden>
+    <div class="paper p-7 max-w-[24rem]">
+      <div class="eyebrow mb-2">Live demo</div>
+      <h1 class="display text-[28px] leading-[30px] text-ink">Made for a bigger screen.</h1>
+      <p class="text-[15px] text-ink-2 mt-3 leading-snug">Questly is a desktop app, so the demo is a whole pretend desktop. It works best on a computer, but you can still look around.</p>
+      <div class="flex gap-2 mt-5">
+        <a class="btn btn-glass" href="/">Back</a>
+        <button class="btn btn-primary" type="button" data-small-continue>Show it anyway</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/try/host.ts"></script>
+</body>
+</html>

@@ -1,0 +1,567 @@
+/* The live demo's pretend desktop around the real app. */
+@import "../../../src/theme/splash.css";
+
+html,
+body.try-body {
+    height: 100%;
+    overflow: hidden;
+    user-select: none;
+}
+
+.try-body {
+    display: flex;
+    flex-direction: column;
+    background: #0d0c0b;
+}
+
+/* ----- demo bar ----- */
+.demo-bar {
+    position: relative;
+    z-index: 40;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 56px;
+    padding: 0 16px;
+    border-bottom: 1px solid var(--line);
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter: blur(14px);
+}
+
+.demo-bar .logo {
+    width: 26px;
+    height: 26px;
+}
+
+.bar-note {
+    font-size: 0.8rem;
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+}
+
+.bar-controls {
+    margin-left: auto;
+    display: flex;
+    gap: 6px;
+}
+
+.sim {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    height: 32px;
+    padding: 0 12px;
+    border-radius: 999px;
+    border: 1px solid var(--line-strong);
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--ink-2);
+    white-space: nowrap;
+    transition: background-color 200ms ease, color 200ms ease, border-color 200ms ease, transform 220ms var(--ease-spring);
+}
+
+.sim:hover {
+    color: var(--ink);
+    background: var(--glass-2);
+}
+
+.sim:active {
+    transform: scale(0.95);
+}
+
+.sim-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    border: 1.5px solid currentColor;
+    transition: background-color 200ms ease, border-color 200ms ease;
+}
+
+.sim[aria-pressed="true"] {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--on-accent);
+}
+
+.sim[aria-pressed="true"] .sim-dot {
+    background: var(--on-accent);
+    border-color: var(--on-accent);
+}
+
+@media (max-width: 1100px) {
+    .bar-note {
+        display: none;
+    }
+}
+
+/* ----- desktop ----- */
+.desktop {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.desk-glow i {
+    position: absolute;
+    border-radius: 999px;
+    filter: blur(110px);
+    opacity: 0.22;
+}
+
+.desk-glow i:nth-child(1) {
+    width: 60vw;
+    height: 60vw;
+    left: -12vw;
+    top: -24vw;
+    background: var(--blob-1);
+}
+
+.desk-glow i:nth-child(2) {
+    width: 50vw;
+    height: 50vw;
+    right: -14vw;
+    bottom: -28vw;
+    background: var(--blob-2);
+}
+
+.desk-icon {
+    position: absolute;
+    left: 22px;
+    top: 20px;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    width: 84px;
+    padding: 10px 4px 8px;
+    border-radius: 12px;
+    color: #f2ece0;
+    font-size: 0.78rem;
+    font-weight: 600;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+    transition: background-color 150ms ease;
+}
+
+.desk-icon:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.desk-icon svg {
+    width: 46px;
+    height: 46px;
+}
+
+.desk-hint {
+    position: absolute;
+    left: 118px;
+    top: 34px;
+    z-index: 2;
+    max-width: 230px;
+    padding: 10px 14px;
+    border-radius: 14px;
+    font-size: 0.8rem;
+    line-height: 1.4;
+    animation: rise-in 500ms var(--ease-quint) both;
+}
+
+.tips {
+    position: absolute;
+    left: 20px;
+    top: 20px;
+    z-index: 3;
+    width: 290px;
+    padding: 16px 16px 14px;
+    font-size: 0.84rem;
+    color: var(--ink-2);
+    animation: rise-in 700ms var(--ease-quint) both;
+}
+
+.tips ol {
+    list-style: decimal;
+    padding-left: 1.1rem;
+    display: grid;
+    gap: 6px;
+    line-height: 1.45;
+}
+
+.tips li::marker {
+    color: var(--faint);
+    font-weight: 700;
+}
+
+.tips .kbd {
+    height: 1.2rem;
+    min-width: 1.2rem;
+    font-size: 0.65rem;
+}
+
+@media (max-width: 1500px) {
+    .tips {
+        display: none;
+    }
+}
+
+/* ----- the app window ----- */
+.win {
+    position: absolute;
+    z-index: 10;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 40px 100px -30px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(255, 255, 255, 0.07);
+    opacity: 0;
+    transform: scale(0.94);
+    pointer-events: none;
+    transition: opacity 260ms ease, transform 520ms var(--ease-quint);
+}
+
+.win.open {
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+}
+
+.win.minimized {
+    opacity: 0;
+    transform: translateY(40%) scale(0.35);
+    transition: opacity 280ms ease, transform 420ms var(--ease-quint);
+}
+
+.win.dragging {
+    transition: none;
+}
+
+.win iframe {
+    display: block;
+    width: 1120px;
+    height: 720px;
+    border: 0;
+    transform-origin: 0 0;
+    background: #1a1916;
+}
+
+.win.dragging iframe {
+    pointer-events: none;
+}
+
+/* splash: the same card as the desktop app's startup window */
+.try-splash {
+    --splash-green: #46d27a;
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    display: grid;
+    place-items: center;
+    pointer-events: none;
+}
+
+.try-splash .splash {
+    width: 252px;
+    height: 252px;
+}
+
+.try-splash.gone {
+    display: none;
+}
+
+/* ----- game windows ----- */
+.cards {
+    position: absolute;
+    inset: 0;
+    z-index: 15;
+    pointer-events: none;
+}
+
+.game-card {
+    --g-bg: #1a1916;
+    --g-ink: #f2ece0;
+    --g-muted: #9a9285;
+    --g-line: #4a4640;
+    --g-btn: #efe7d7;
+    --g-btn-ink: #1a1916;
+    --g-accent: #cfdd7a;
+    --g-danger: #f07c6c;
+    position: absolute;
+    width: 206px;
+    height: 206px;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    border-radius: 12px;
+    background: var(--g-bg);
+    color: var(--g-ink);
+    box-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.85), 0 0 0 1px var(--g-line);
+    pointer-events: auto;
+    cursor: grab;
+    animation: card-in 420ms var(--ease-quint) both;
+}
+
+.game-card.leaving {
+    animation: card-out 200ms ease forwards;
+}
+
+.game-card:active {
+    cursor: grabbing;
+}
+
+.game-card .g-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--g-muted);
+}
+
+.game-card .g-eyebrow i {
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: var(--g-accent);
+}
+
+.game-card .g-icon {
+    width: 50px;
+    height: 50px;
+    margin-top: 12px;
+    border-radius: 12px;
+    object-fit: cover;
+    display: grid;
+    place-items: center;
+    font-weight: 800;
+    font-size: 22px;
+    background: var(--g-line);
+}
+
+.game-card .g-title {
+    margin-top: 10px;
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 15px;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.game-card .g-time {
+    margin-top: 3px;
+    font-size: 11px;
+    color: var(--g-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.game-card .g-actions {
+    margin-top: auto;
+    display: flex;
+    gap: 6px;
+}
+
+.game-card button {
+    flex: 1;
+    height: 28px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 200ms var(--ease-spring), filter 150ms ease;
+}
+
+.game-card button:active {
+    transform: scale(0.94);
+}
+
+.game-card .g-close {
+    background: var(--g-btn);
+    color: var(--g-btn-ink);
+}
+
+.game-card .g-delete {
+    border: 1px solid var(--g-danger);
+    color: var(--g-danger);
+}
+
+.game-card button:hover {
+    filter: brightness(1.08);
+}
+
+@keyframes card-in {
+    from {
+        opacity: 0;
+        transform: translateY(14px) scale(0.96);
+    }
+}
+
+@keyframes card-out {
+    to {
+        opacity: 0;
+        transform: scale(0.94);
+    }
+}
+
+/* ----- taskbar & tray ----- */
+.taskbar {
+    position: relative;
+    z-index: 40;
+    flex-shrink: 0;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(20, 19, 17, 0.92);
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(20px);
+}
+
+.task-center {
+    display: flex;
+    gap: 4px;
+}
+
+.task-app {
+    position: relative;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    display: grid;
+    place-items: center;
+    transition: background-color 150ms ease;
+}
+
+.task-app:hover,
+.task-app.active {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.task-app svg {
+    width: 24px;
+    height: 24px;
+}
+
+.task-app::after {
+    content: "";
+    position: absolute;
+    bottom: 2px;
+    left: 50%;
+    width: 6px;
+    height: 3px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.5);
+    transform: translateX(-50%);
+    transition: width 250ms var(--ease-quint), background-color 250ms ease;
+}
+
+.task-app.active::after {
+    width: 16px;
+    background: var(--icon-fill, var(--accent));
+}
+
+.task-tray {
+    position: absolute;
+    right: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.75rem;
+    color: #d8d2c6;
+}
+
+.tray-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    display: grid;
+    place-items: center;
+}
+
+.tray-icon:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.tray-icon svg {
+    width: 17px;
+    height: 17px;
+}
+
+.tray-games {
+    color: #9a9285;
+}
+
+.clock {
+    font-variant-numeric: tabular-nums;
+    padding-left: 4px;
+}
+
+.tray-note,
+.tray-menu {
+    position: absolute;
+    right: 14px;
+    bottom: 12px;
+    z-index: 30;
+    border-radius: 14px;
+    box-shadow: 0 20px 50px -20px rgba(0, 0, 0, 0.8);
+    animation: rise-in 360ms var(--ease-quint) both;
+}
+
+.tray-note {
+    max-width: 260px;
+    padding: 12px 14px;
+    font-size: 0.8rem;
+    line-height: 1.4;
+}
+
+.tray-menu {
+    min-width: 190px;
+    padding: 6px;
+    display: grid;
+}
+
+.tray-menu button {
+    text-align: left;
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 0.84rem;
+    font-weight: 600;
+}
+
+.tray-menu button:hover {
+    background: var(--paper-fill-2);
+}
+
+.tray-menu hr {
+    border: 0;
+    border-top: 1px solid var(--paper-line);
+    margin: 4px 6px;
+}
+
+/* ----- small screens ----- */
+.small-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: grid;
+    place-items: center;
+    padding: 16px;
+    background: color-mix(in srgb, #0c0b0a 70%, transparent);
+    backdrop-filter: blur(6px);
+}
+
+@media (max-width: 760px) {
+    .bar-controls .sim {
+        padding: 0 9px;
+        font-size: 0.72rem;
+    }
+
+    .demo-bar .tag,
+    .demo-bar [data-reset] {
+        display: none;
+    }
+}

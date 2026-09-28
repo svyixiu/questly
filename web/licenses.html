@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Licenses · Questly</title>
+  <meta name="description" content="Questly's MIT License, the original Discord Quest Completer license, and the open source software Questly is built with." />
+  <meta name="theme-color" content="#1a1916" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+</head>
+<body data-page="doc">
+  <div class="site-glow" aria-hidden="true"><i></i><i></i><i></i></div>
+  <!-- include:header -->
+  <main id="main" class="wrap pt-14 sm:pt-20">
+    <div class="doc">
+      <div class="eyebrow">Legal</div>
+      <h1 class="section-title mt-3">Licenses</h1>
+      <p class="text-muted mt-4">Questly is open source under the MIT License, and built on other open source software.</p>
+
+      <article class="prose mt-8">
+        <h2>Questly</h2>
+        <p>Questly is a fork of <a href="%ORIGINAL_URL%" target="_blank" rel="noopener">Discord Quest Completer</a> by Mark
+          Terence Tiglao, which is MIT licensed. Questly keeps that license and the original copyright notice, and adds its own.
+          This text is also in the <a href="%REPO_URL%/blob/main/LICENSE" target="_blank" rel="noopener">LICENSE</a> file.</p>
+        <pre>MIT License
+
+Copyright (c) 2025 Mark Terence Tiglao
+Copyright (c) 2026 svyixiu and Questly contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.</pre>
+
+        <h2>Open source software in Questly</h2>
+        <p>Questly includes or is built with these projects. Each keeps its own license; the full texts are in each project's
+          repository. The complete list of dependencies, including indirect ones, is in the repository's
+          <code>pnpm-lock.yaml</code> and <code>src-tauri/Cargo.lock</code>.</p>
+
+        <h3>Desktop app</h3>
+        <table>
+          <thead><tr><th>Project</th><th>Used for</th><th>License</th></tr></thead>
+          <tbody>
+            <tr><td><a href="https://github.com/tauri-apps/tauri" target="_blank" rel="noopener">Tauri</a> and its dialog, http and opener plugins</td><td>The app framework</td><td>MIT or Apache-2.0</td></tr>
+            <tr><td><a href="https://github.com/vuejs/core" target="_blank" rel="noopener">Vue.js</a></td><td>The interface</td><td>MIT</td></tr>
+            <tr><td><a href="https://github.com/vueuse/vueuse" target="_blank" rel="noopener">VueUse</a></td><td>Interface helpers</td><td>MIT</td></tr>
+            <tr><td><a href="https://github.com/krisk/Fuse" target="_blank" rel="noopener">Fuse.js</a></td><td>Fuzzy game search</td><td>Apache-2.0</td></tr>
+            <tr><td><a href="https://github.com/tailwindlabs/tailwindcss" target="_blank" rel="noopener">Tailwind CSS</a></td><td>Styling</td><td>MIT</td></tr>
+            <tr><td><a href="https://github.com/Omnibus-Type/Archivo" target="_blank" rel="noopener">Archivo</a> by Omnibus-Type, via <a href="https://fontsource.org" target="_blank" rel="noopener">Fontsource</a></td><td>The typeface</td><td>SIL Open Font License 1.1</td></tr>
+            <tr><td><a href="https://github.com/ai/nanoid" target="_blank" rel="noopener">nanoid</a></td><td>IDs</td><td>MIT</td></tr>
+            <tr><td><a href="https://github.com/EmbarkStudios/discord-sdk" target="_blank" rel="noopener">discord-sdk</a> by Embark Studios</td><td>The RPC test</td><td>MIT or Apache-2.0</td></tr>
+            <tr><td><a href="https://github.com/tokio-rs/tokio" target="_blank" rel="noopener">Tokio</a></td><td>Background tasks</td><td>MIT</td></tr>
+            <tr><td><a href="https://github.com/serde-rs/serde" target="_blank" rel="noopener">Serde</a> and serde_json</td><td>Reading and writing data</td><td>MIT or Apache-2.0</td></tr>
+            <tr><td><a href="https://github.com/seanmonstar/reqwest" target="_blank" rel="noopener">reqwest</a></td><td>Downloading the game list and icons</td><td>MIT or Apache-2.0</td></tr>
+            <tr><td><a href="https://github.com/matklad/once_cell" target="_blank" rel="noopener">once_cell</a></td><td>Shared state</td><td>MIT or Apache-2.0</td></tr>
+            <tr><td><a href="https://github.com/microsoft/windows-rs" target="_blank" rel="noopener">windows-sys</a></td><td>Talking to Windows</td><td>MIT or Apache-2.0</td></tr>
+          </tbody>
+        </table>
+
+        <h3>Website</h3>
+        <p>The website uses Vue.js, VueUse, Fuse.js, Tailwind CSS and Archivo as listed above, and is built with
+          <a href="https://github.com/vitejs/vite" target="_blank" rel="noopener">Vite</a> and
+          <a href="https://github.com/vitejs/vite-plugin-vue" target="_blank" rel="noopener">@vitejs/plugin-vue</a> (both MIT).</p>
+
+        <h2>Data and trademarks</h2>
+        <ul>
+          <li>The list of detectable games comes from Discord's public list of detectable applications. Game names, icons and
+            logos belong to their owners and are shown only to identify games.</li>
+          <li>“Discord” is a trademark of Discord Inc. Questly isn't affiliated with, endorsed by or sponsored by Discord Inc.</li>
+          <li>“Windows” is a trademark of Microsoft Corporation.</li>
+        </ul>
+      </article>
+    </div>
+  </main>
+  <!-- include:footer -->
+  <script type="module" src="/src/pages/doc.ts"></script>
+</body>
+</html>

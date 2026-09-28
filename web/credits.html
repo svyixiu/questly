@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Credits · Questly</title>
+  <meta name="description" content="Questly is built on Discord Quest Completer by Mark Terence Tiglao, and on a lot of open source software." />
+  <meta name="theme-color" content="#1a1916" />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+</head>
+<body data-page="doc">
+  <div class="site-glow" aria-hidden="true"><i></i><i></i><i></i></div>
+  <!-- include:header -->
+  <main id="main" class="wrap pt-14 sm:pt-20">
+    <div class="doc">
+      <div class="eyebrow">Credits</div>
+      <h1 class="section-title mt-3">Standing on good shoulders.</h1>
+      <p class="lede mt-5">Questly wouldn't exist without the project it grew from, and the open source work it's built on.</p>
+
+      <div class="paper p-7 sm:p-9 mt-10">
+        <div class="eyebrow mb-2">The original project</div>
+        <h2 class="display text-[30px] leading-[32px] text-ink">Discord Quest Completer</h2>
+        <p class="text-ink-2 mt-1">by Mark Terence Tiglao (<a class="underline decoration-2 underline-offset-2" href="https://github.com/markterence" target="_blank" rel="noopener">@markterence</a>)</p>
+        <p class="text-[15px] text-ink-2 leading-relaxed mt-4 max-w-[40rem]">
+          Questly started as a fork of Discord Quest Completer. The core idea, starting a small stand-in program with a game's
+          executable name so Discord detects it, comes from there, along with the original Tauri app, the stand-in programs
+          for each platform, and the daily mirror of Discord's detectable game list that Questly still downloads.
+          It's released under the MIT License, which is why Questly can build on it, and why its copyright notice travels
+          with Questly's code.
+        </p>
+        <div class="flex flex-wrap gap-2 mt-6">
+          <a class="btn btn-primary btn-sm" href="%ORIGINAL_URL%" target="_blank" rel="noopener">See the original on GitHub</a>
+          <a class="btn btn-glass btn-sm" href="https://github.com/sponsors/markterence" target="_blank" rel="noopener">Support the original author</a>
+        </div>
+      </div>
+
+      <article class="prose mt-10">
+        <h2>What Questly adds</h2>
+        <p>A redesigned interface with themes and a custom theme editor, an installer and launcher in one file, Spotlight
+          search, timed runs that wait for Discord's detection, square game windows, Performance Guard, Panic Abort,
+          Legitimate Buddy, Launch on startup, an accent-colored app icon, a startup animation, and library import and export.
+          Questly is made by <a href="https://github.com/svyixiu" target="_blank" rel="noopener">svyixiu</a>.</p>
+
+        <h2>Built with</h2>
+        <ul>
+          <li><a href="https://tauri.app" target="_blank" rel="noopener">Tauri</a> and <a href="https://www.rust-lang.org" target="_blank" rel="noopener">Rust</a> for the app itself</li>
+          <li><a href="https://vuejs.org" target="_blank" rel="noopener">Vue.js</a>, <a href="https://vueuse.org" target="_blank" rel="noopener">VueUse</a> and <a href="https://tailwindcss.com" target="_blank" rel="noopener">Tailwind CSS</a> for the interface</li>
+          <li><a href="https://www.fusejs.io" target="_blank" rel="noopener">Fuse.js</a> for search</li>
+          <li><a href="https://github.com/EmbarkStudios/discord-sdk" target="_blank" rel="noopener">discord-sdk</a> by Embark Studios for the RPC test</li>
+          <li><a href="https://github.com/Omnibus-Type/Archivo" target="_blank" rel="noopener">Archivo</a> by Omnibus-Type for the type</li>
+          <li><a href="https://vitejs.dev" target="_blank" rel="noopener">Vite</a> to build the app and this website</li>
+        </ul>
+        <p>Full license details are on the <a href="/licenses">Licenses</a> page.</p>
+
+        <h2>Data</h2>
+        <p>Game names, executables and icons come from Discord's public list of detectable applications and its image server.
+          They belong to their owners and are only shown to identify games.</p>
+
+        <h2>Hosting</h2>
+        <p>The source code and downloads live on <a href="%REPO_URL%" target="_blank" rel="noopener">GitHub</a>, and this
+          website runs on <a href="https://vercel.com" target="_blank" rel="noopener">Vercel</a>.</p>
+      </article>
+    </div>
+  </main>
+  <!-- include:footer -->
+  <script type="module" src="/src/pages/doc.ts"></script>
+</body>
+</html>
