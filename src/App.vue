@@ -97,22 +97,22 @@ onUnmounted(() => { unlisten.then(fn => fn?.()); });
   inset: 0;
 }
 
+/* no blur filter here: blurring a whole page full of frosted cards every frame
+   made switching tabs stutter with a big library */
 .page-enter-active {
-  transition: opacity 320ms ease, transform 600ms var(--ease-quint), filter 320ms ease;
+  transition: opacity 320ms ease, transform 600ms var(--ease-quint);
 }
 
 .page-leave-active {
-  transition: opacity 160ms ease, filter 160ms ease;
+  transition: opacity 160ms ease;
 }
 
 .page-enter-from {
   opacity: 0;
   transform: translateY(12px) scale(0.99);
-  filter: blur(6px);
 }
 
 .page-leave-to {
   opacity: 0;
-  filter: blur(4px);
 }
 </style>

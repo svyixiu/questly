@@ -226,6 +226,73 @@ fn ps_quote(s: &str) -> String {
     format!("'{}'", s.replace('\'', "''"))
 }
 
+// ----- one Questly at a time -----
+
+#[cfg_attr(debug_assertions, allow(dead_code))]
+fn resolve(path: &str, cwd: &str) -> PathBuf {
+    let p = PathBuf::from(path);
+    if p.is_absolute() {
+        p
+    } else {
+        Path::new(cwd).join(p)
+    }
+}
+
+/// Quits, then starts `exe` once this process is gone (only one Questly runs
+/// at a time, so it couldn't start while this one is still here).
+fn quit_and_start(app: &AppHandle, exe: &Path, args: &[&str]) -> Result<(), String> {
+    let dir = exe.parent().unwrap_or(Path::new("."));
+    let script = format!(
+        "Wait-Process -Id {pid} -ErrorAction SilentlyContinue; Start-Process -FilePath {exe} -WorkingDirectory {dir}{args}",
+        pid = std::process::id(),
+        exe = ps_quote(&exe.to_string_lossy()),
+        dir = ps_quote(&dir.to_string_lossy()),
+        args = if args.is_empty() {
+            String::new()
+        } else {
+            format!(" -ArgumentList {}", args.iter().map(|a| ps_quote(a)).collect::<Vec<_>>().join(","))
+        },
+    );
+    let mut cmd = std::process::Command::new("powershell");
+    cmd.args(["-NoProfile", "-NonInteractive", "-WindowStyle", "Hidden", "-Command", &script]);
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::process::CommandExt;
+        // a hidden console, not none at all: PowerShell started with DETACHED_PROCESS
+        // quits without running its command
+        cmd.creation_flags(0x0800_0000); // CREATE_NO_WINDOW
+    }
+    cmd.spawn().map_err(|e| format!("Couldn't start {}: {}", exe.display(), e))?;
+    exit_app(app);
+    Ok(())
+}
+
+/// Questly was opened again while it's running. The same copy just brings this
+/// window forward; another Questly.exe (a new download, or the installed one
+/// while the installer is open) takes over, so an update can replace this file.
+#[cfg_attr(debug_assertions, allow(dead_code))]
+fn on_second_instance(app: &AppHandle, argv: Vec<String>, cwd: String) {
+    // Windows starting Questly at sign-in while it's already open: nothing to do
+    if argv.iter().any(|a| a == "--autostart") {
+        return;
+    }
+    if let (Some(first), Ok(this)) = (argv.first(), env::current_exe()) {
+        let other = resolve(first, &cwd);
+        let is_exe = other.extension().is_some_and(|e| e.eq_ignore_ascii_case("exe"));
+        if is_exe && other.is_file() && !same_file(&other, &this) {
+            let args: Vec<&str> = argv[1..].iter().map(String::as_str).collect();
+            let _ = quit_and_start(app, &other, &args);
+            return;
+        }
+        // "Apps & features" → Uninstall while Questly is open: come back as the uninstaller
+        if argv.iter().any(|a| a == "--uninstall") {
+            let _ = quit_and_start(app, &this, &["--uninstall"]);
+            return;
+        }
+    }
+    show_main_window(app);
+}
+
 // ----- library.json -----
 
 fn library_file_path() -> PathBuf {
@@ -435,13 +502,8 @@ New-ItemProperty -Path $k -Name EstimatedSize -Value {size_kb} -PropertyType DWo
 /// Starts the installed copy and closes this one (the installer).
 #[tauri::command]
 fn launch_installed(handle: AppHandle) -> Result<(), String> {
-    let target = installed_exe();
-    std::process::Command::new(&target)
-        .current_dir(install_dir())
-        .spawn()
-        .map_err(|e| format!("Couldn't start {}: {}", target.display(), e))?;
-    exit_app(&handle);
-    Ok(())
+    // started once the installer is gone: only one Questly runs at a time
+    quit_and_start(&handle, &installed_exe(), &[])
 }
 
 /// Removes shortcuts, the "Apps & features" entry and the installed files
@@ -978,6 +1040,31 @@ async fn ensure_game_icon(game_root: &Path, url: Option<&str>) -> Option<PathBuf
     Some(path)
 }
 
+/// Stop all: every game in one go, from one pass over the game windows and one
+/// list of the running programs, however many games are running. Returns how
+/// many were ended.
+#[tauri::command(rename_all = "snake_case")]
+async fn stop_processes(exec_names: Vec<String>) -> Result<usize, String> {
+    #[cfg(target_os = "windows")]
+    {
+        let names: std::collections::HashSet<String> =
+            exec_names.iter().map(|n| stop_process_name(n).to_lowercase()).collect();
+        // a force-stopped game can't take its own tray icon down
+        system::remove_runner_tray_icons_of(&names);
+        system::terminate_by_names(&names)
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        let mut ended = 0;
+        for name in exec_names {
+            if stop_process(name).await.is_ok() {
+                ended += 1;
+            }
+        }
+        Ok(ended)
+    }
+}
+
 #[tauri::command(rename_all = "snake_case")]
 async fn stop_process(exec_name: String) -> Result<(), String> {
     let process_name = stop_process_name(&exec_name);
@@ -1133,7 +1220,13 @@ async fn fetch_gamelist_from_discord() -> tauri::ipc::Response {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    let builder = tauri::Builder::default();
+    // one Questly at a time (development builds may run next to the installed one)
+    #[cfg(not(debug_assertions))]
+    let builder = builder.plugin(tauri_plugin_single_instance::init(|app, argv, cwd| {
+        on_second_instance(app, argv, cwd)
+    }));
+    builder
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_opener::init())
@@ -1189,6 +1282,7 @@ pub fn run() {
             greet,
             create_fake_game,
             stop_process,
+            stop_processes,
             connect_to_discord_rpc_3,
             run_background_process,
             fetch_gamelist_gh_mirror,

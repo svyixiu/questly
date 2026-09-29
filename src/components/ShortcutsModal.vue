@@ -37,6 +37,7 @@ const groups: { title: string; items: { keys: string[][]; label: string }[] }[] 
             { keys: [['Ctrl', 'T']], label: 'Timed run for checked games (or all)' },
             { keys: [['Ctrl', 'Shift', 'X']], label: 'Panic Abort: stop everything' },
             { keys: [['Ctrl', '1'], ['Ctrl', '2'], ['Ctrl', '3']], label: 'Switch to Library / Activity / Settings' },
+            { keys: [['Ctrl', 'B']], label: 'Hide / show the library' },
             { keys: [['?']], label: 'Show this help' },
         ],
     },

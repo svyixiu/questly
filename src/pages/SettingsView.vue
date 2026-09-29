@@ -348,6 +348,13 @@ const agreedOn = computed(() => settings.value.termsAcceptedAt
                     </div>
                     <div class="row">
                         <div>
+                            <div class="row-title">Always on top</div>
+                            <div class="row-desc">Keep Questly above every other window. The pin in the title bar does the same.</div>
+                        </div>
+                        <ToggleSwitch v-model="settings.alwaysOnTop" label="Always on top" />
+                    </div>
+                    <div class="row">
+                        <div>
                             <div class="row-title">Come back when a timer finishes</div>
                             <div class="row-desc">Show the window again once a timed run is done.</div>
                         </div>

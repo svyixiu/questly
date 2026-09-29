@@ -152,6 +152,9 @@ async function handle(cmd: string, args: Args): Promise<unknown> {
         case 'plugin:window|close':
             toHost({ q: 'window', action: closeToTray ? 'hide' : 'quit' })
             return null
+        case 'plugin:window|set_always_on_top':
+            // a browser tab can't float above other apps; the setting is still remembered
+            return null
         case 'hide_window':
             toHost({ q: 'window', action: 'hide' })
             if (!inFrame) toast('info', 'Hidden to the tray', 'In the desktop app the window would now be in the system tray.')
@@ -254,6 +257,16 @@ async function handle(cmd: string, args: Args): Promise<unknown> {
             running.delete(key)
             toHost({ q: 'game:stop', exe: key })
             return null
+        }
+        case 'stop_processes': {
+            let ended = 0
+            for (const name of args.exec_names as string[]) {
+                const key = String(name).toLowerCase()
+                if (!running.delete(key)) continue
+                toHost({ q: 'game:stop', exe: key })
+                ended++
+            }
+            return ended
         }
         case 'set_game_windows_visible':
             toHost({ q: 'games:visible', visible: !!args.visible })

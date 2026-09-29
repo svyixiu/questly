@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useEventListener } from '@vueuse/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { Pages, useGlobalState } from '@/composables/app-state';
+import { useSettings } from '@/composables/settings';
 import { useGameDB } from '@/composables/game-db';
 import { useGameLibrary } from '@/composables/game-library';
 import { useDiscordDetect } from '@/composables/discord-detect';
@@ -43,6 +44,18 @@ function win() {
 const close = () => win()?.close().catch(() => {});
 const minimize = () => win()?.minimize().catch(() => {});
 
+const { settings } = useSettings();
+
+// Always on top: Questly's window stays above every other app
+if (!props.minimal) {
+  watch(() => settings.value.alwaysOnTop, on => { win()?.setAlwaysOnTop(on).catch(() => {}); }, { immediate: true });
+}
+const toggleOnTop = () => { settings.value.alwaysOnTop = !settings.value.alwaysOnTop; };
+
+// the Library page's library panel folds away (a hamburger opens it again)
+const libraryOpen = computed(() => !settings.value.libraryCollapsed);
+const toggleLibrary = () => { settings.value.libraryCollapsed = !settings.value.libraryCollapsed; };
+
 const dbTip = computed(() => allFetchDone.value
   ? `${gameDB.value.length.toLocaleString()} detectable games · ${gameListSource.value}. Click to refresh.`
   : 'Syncing the game list…');
@@ -60,6 +73,11 @@ useEventListener(window, 'keydown', (e: KeyboardEvent) => {
     return;
   }
   if (props.minimal || !(e.ctrlKey || e.metaKey) || e.shiftKey || e.altKey) return;
+  if (e.key?.toLowerCase() === 'b' && page.value === Pages.HOME && !document.querySelector('[aria-modal="true"]')) {
+    e.preventDefault();
+    toggleLibrary();
+    return;
+  }
   const index = ['1', '2', '3'].indexOf(e.key);
   if (index >= 0) {
     e.preventDefault();
@@ -91,6 +109,28 @@ useEventListener(window, 'keydown', (e: KeyboardEvent) => {
       <div data-tauri-drag-region class="flex items-center gap-2 min-w-0 ml-1">
         <LogoMark class="w-6 h-6" data-tauri-drag-region />
         <span data-tauri-drag-region class="display text-[19px] text-ink leading-none">Questly</span>
+      </div>
+
+      <div v-if="!minimal" class="flex items-center gap-1 -ml-1">
+        <!-- three lines when the library is folded away, an X to fold it -->
+        <Transition name="pop">
+          <button v-if="page === Pages.HOME" class="icon-btn burger" :class="{ open: libraryOpen }"
+            :aria-label="libraryOpen ? 'Hide the library' : 'Show the library'" :aria-expanded="libraryOpen"
+            :data-tip="libraryOpen ? 'Hide the library (Ctrl+B)' : 'Show the library (Ctrl+B)'" data-tip-pos="bottom"
+            @click="toggleLibrary">
+            <span class="bars" aria-hidden="true"><i></i><i></i><i></i></span>
+          </button>
+        </Transition>
+        <button class="icon-btn pin" :class="{ on: settings.alwaysOnTop }" :aria-pressed="settings.alwaysOnTop"
+          aria-label="Always on top" data-tip-pos="bottom"
+          :data-tip="settings.alwaysOnTop ? 'Always on top: on. Click to let other windows cover Questly' : 'Always on top: keep Questly above other windows'"
+          @click="toggleOnTop">
+          <svg viewBox="0 0 24 24" class="w-[17px] h-[17px]" :fill="settings.alwaysOnTop ? 'currentColor' : 'none'"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 4h6l-1 6 3.5 3.5h-11L10 10z" />
+            <path d="M12 13.5V20" fill="none" />
+          </svg>
+        </button>
       </div>
 
       <!-- Tabs: outlined pill with a solid active pill that slides -->
@@ -225,6 +265,54 @@ useEventListener(window, 'keydown', (e: KeyboardEvent) => {
 
 .panic:active:not(:disabled) {
   transform: scale(0.94);
+}
+
+/* hamburger <-> X: the middle bar fades out, the outer two meet and cross */
+.bars {
+  position: relative;
+  width: 16px;
+  height: 12px;
+}
+
+.bars i {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  border-radius: 2px;
+  background: currentColor;
+  transition: transform 380ms var(--ease-spring), opacity 200ms ease, top 380ms var(--ease-spring);
+}
+
+.bars i:nth-child(1) { top: 0; }
+.bars i:nth-child(2) { top: 5px; }
+.bars i:nth-child(3) { top: 10px; }
+
+.burger.open .bars i:nth-child(1) {
+  top: 5px;
+  transform: rotate(45deg);
+}
+
+.burger.open .bars i:nth-child(2) {
+  opacity: 0;
+  transform: scaleX(0.2);
+}
+
+.burger.open .bars i:nth-child(3) {
+  top: 5px;
+  transform: rotate(-45deg);
+}
+
+.pin svg {
+  transition: transform 320ms var(--ease-spring);
+}
+
+.pin.on {
+  color: var(--accent);
+}
+
+.pin.on svg {
+  transform: rotate(-30deg);
 }
 
 .indicator {

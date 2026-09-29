@@ -1,5 +1,5 @@
 import { createGlobalState, useEventListener, watchDebounced } from '@vueuse/core'
-import { computed, ref, watch } from 'vue'
+import { computed, ref, toRaw, watch } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
 import { sep } from '@tauri-apps/api/path'
@@ -144,13 +144,24 @@ export const useGameLibrary = createGlobalState(() => {
     let lastModified = 0
     let lastWritten = ''
 
+    // Discord's list by id and by name, built once per list: looking a game up is
+    // instant instead of a search through ~22,000 entries (for every library entry)
+    const dbIndex = computed(() => {
+        const byId = new Map<string, Game>()
+        const byName = new Map<string, Game>()
+        for (const g of toRaw(gameDB.value)) {
+            byId.set(String(g.id), g)
+            const name = String(g.name).toLowerCase()
+            if (!byName.has(name)) byName.set(name, g)
+        }
+        return { byId, byName }
+    })
+
     /** Fills in entries that only have an id or a name, from Discord's game list. */
     function resolveFromDB(entry: FileEntry): Partial<Game> & { id: string } {
-        const db = gameDB.value
-        const byId = entry.id != null ? db.find(g => String(g.id) === String(entry.id)) : undefined
-        const byName = !byId && entry.name
-            ? db.find(g => g.name.toLowerCase() === String(entry.name).toLowerCase())
-            : undefined
+        const { byId: ids, byName: names } = dbIndex.value
+        const byId = entry.id != null ? ids.get(String(entry.id)) : undefined
+        const byName = !byId && entry.name ? names.get(String(entry.name).toLowerCase()) : undefined
         const found = byId ?? byName
         const hasExes = Array.isArray(entry.executables) && entry.executables.length > 0
         return {
@@ -167,11 +178,15 @@ export const useGameLibrary = createGlobalState(() => {
     function applyEntries(entries: FileEntry[]) {
         const next: Game[] = []
         const seen = new Set<string>()
+        // where each current game is (a map, not a search per entry: big libraries stay quick)
+        const indexById = new Map<string, number>()
+        toRaw(games.value).forEach((g, i) => { if (!indexById.has(g.id)) indexById.set(g.id, i) })
         for (const entry of entries) {
             const resolved = resolveFromDB(entry)
             if (seen.has(resolved.id)) continue
             seen.add(resolved.id)
-            const existing = games.value.find(g => g.id === resolved.id)
+            const at = indexById.get(resolved.id)
+            const existing = at === undefined ? undefined : games.value[at]
             if (existing) {
                 existing.name = resolved.name ?? existing.name
                 existing.selected_exe = resolved.selected_exe
@@ -189,8 +204,9 @@ export const useGameLibrary = createGlobalState(() => {
             if (!seen.has(old.id) && isGameRunning(old)) stop(old, undefined, { quiet: true })
         }
         games.value = next
-        if (!games.value.some(g => g.uid === focusedUid.value)) focusedUid.value = games.value[0]?.uid ?? null
-        checked.value.forEach(uid => { if (!games.value.some(g => g.uid === uid)) checked.value.delete(uid) })
+        const uids = new Set(next.map(g => g.uid))
+        if (!uids.has(focusedUid.value!)) focusedUid.value = next[0]?.uid ?? null
+        checked.value.forEach(uid => { if (!uids.has(uid)) checked.value.delete(uid) })
     }
 
     /** Reads library.json; creates it from the current list the first time. */
@@ -281,13 +297,22 @@ export const useGameLibrary = createGlobalState(() => {
         }
     }
 
-    watchDebounced(games, value => {
-        saveLocalGames(value)
+    // Saved (localStorage + library.json) when something that's saved changes. An
+    // explicit signal rather than a deep watch: a deep watch walks every game
+    // whenever any running/detected flag flips, which adds up with thousands of
+    // games in a timed run, and those flags aren't saved anyway. Everything that
+    // edits saved fields lives in this file and calls changed().
+    const saveVersion = ref(0)
+    const changed = () => { saveVersion.value++ }
+    watchDebounced(saveVersion, () => {
+        saveLocalGames(games.value)
         writeFile()
-    }, { deep: true, debounce: 400 })
+    }, { debounce: 400 })
+    watch(games, changed) // the whole list replaced
 
     // entries added by id/name only get their details once Discord's game list is loaded
     watch(() => gameDB.value.length, () => {
+        let any = false
         for (const g of games.value) {
             if (g.executables.length > 0 && !g.name.startsWith('Unknown game')) continue
             const r = resolveFromDB({ id: g.id.startsWith('name:') ? undefined : g.id, name: g.id.startsWith('name:') ? g.id.slice(5) : undefined })
@@ -297,7 +322,9 @@ export const useGameLibrary = createGlobalState(() => {
             g.icon_hash = r.icon_hash ?? g.icon_hash
             g.aliases = r.aliases ?? g.aliases
             g.executables = r.executables.map(e => ({ name: e.name, os: e.os, is_launcher: !!e.is_launcher }))
+            any = true
         }
+        if (any) changed()
     })
 
     /** resolves once library.json has been read (for the startup splash) */
@@ -307,14 +334,18 @@ export const useGameLibrary = createGlobalState(() => {
 
     // ----- library editing -----
 
+    // looked up for every game of a timed run, so a map rather than a search
+    const byUid = computed(() => new Map(games.value.map(g => [g.uid, g])))
+
     function findByUid(uid: string) {
-        return games.value.find(g => g.uid === uid)
+        return byUid.value.get(uid)
     }
 
     function addGame(game: Game): Game {
         const existing = games.value.find(g => g.id === game.id)
         if (existing) return existing
         games.value.push(toLibraryGame(game))
+        changed()
         // return the reactive copy, so later mutations update the UI
         const added = games.value[games.value.length - 1]
         focusedUid.value = added.uid!
@@ -328,6 +359,7 @@ export const useGameLibrary = createGlobalState(() => {
         const fresh = list.filter((g, i) => !known.has(g.id) && list.findIndex(o => o.id === g.id) === i)
         if (fresh.length === 0) return []
         games.value.push(...fresh.map(toLibraryGame))
+        changed()
         const added = games.value.slice(-fresh.length)
         focusedUid.value = added[0].uid!
         const names = fresh.slice(0, 5).map(g => g.name).join(', ')
@@ -336,14 +368,15 @@ export const useGameLibrary = createGlobalState(() => {
     }
 
     async function removeGames(uids: string[]) {
-        const toRemove = games.value.filter(g => uids.includes(g.uid!))
+        const gone = new Set(uids)
+        const toRemove = games.value.filter(g => gone.has(g.uid!))
         for (const game of toRemove) {
             if (isGameRunning(game)) await stop(game)
         }
         const index = games.value.findIndex(g => g.uid === focusedUid.value)
-        games.value = games.value.filter(g => !uids.includes(g.uid!))
+        games.value = games.value.filter(g => !gone.has(g.uid!))
         uids.forEach(uid => checked.value.delete(uid))
-        if (focusedUid.value && uids.includes(focusedUid.value)) {
+        if (focusedUid.value && gone.has(focusedUid.value)) {
             // keep focus near where it was so keyboard users don't lose their place
             const next = games.value[Math.min(Math.max(index, 0), games.value.length - 1)]
             focusedUid.value = next?.uid ?? null
@@ -356,6 +389,7 @@ export const useGameLibrary = createGlobalState(() => {
 
     function setSelectedExe(game: Game, exeName: string) {
         game.selected_exe = exeName
+        changed()
     }
 
     // ----- checkmarks -----
@@ -432,10 +466,14 @@ export const useGameLibrary = createGlobalState(() => {
      * every process with that filename. Mirror that in the UI state.
      */
     function markStopped(filename: string) {
-        const target = filename.toLowerCase()
+        markStoppedAll(new Set([filename.toLowerCase()]))
+    }
+
+    /** `filenames` in lowercase; one pass over the library for all of them */
+    function markStoppedAll(filenames: Set<string>) {
         for (const g of games.value) {
             for (const exe of g.executables) {
-                if (exe.is_running && getFilename(exe)?.toLowerCase() === target) {
+                if (exe.is_running && filenames.has(getFilename(exe)?.toLowerCase() ?? '')) {
                     exe.is_running = false
                     exe.started_at = undefined
                     exe.launch_requested_at = undefined
@@ -511,33 +549,51 @@ export const useGameLibrary = createGlobalState(() => {
         if (await launch(game)) maybeAutoHide()
     }
 
+    // Stop all also ends a Launch all that's still starting games (a big library
+    // takes a while), so games don't keep appearing after you pressed Stop
+    let launchBatch = 0
+
     async function launchMany(targets: Game[]) {
         const pending = targets.filter(g => !isGameRunning(g))
         if (pending.length === 0) {
             toast('info', 'Everything is already running')
             return 0
         }
+        const mine = ++launchBatch
         batchBusy.value = 'launch'
         let ok = 0
         const failed: string[] = []
         try {
             for (const game of pending) {
-                if (await launch(game, undefined, { quiet: true })) ok++
+                if (mine !== launchBatch) break
+                const launched = await launch(game, undefined, { quiet: true })
+                if (mine !== launchBatch) {
+                    // Stop all came while this one was starting, so it missed it
+                    if (launched) await stop(game, undefined, { quiet: true })
+                    break
+                }
+                if (launched) ok++
                 else failed.push(game.name)
             }
         } finally {
-            batchBusy.value = null
+            if (batchBusy.value === 'launch') batchBusy.value = null
+        }
+        if (mine !== launchBatch) {
+            addLog('info', `Launch all stopped after ${ok} of ${pending.length} games`)
+            return ok
         }
         if (failed.length === 0) {
             toast('success', `Launched ${ok} game${ok === 1 ? '' : 's'}`)
         } else {
-            toast('error', `Launched ${ok} of ${pending.length}`, `Failed: ${failed.join(', ')}. See the activity log.`)
+            const names = failed.length > 3 ? `${failed.slice(0, 3).join(', ')} and ${failed.length - 3} more` : failed.join(', ')
+            toast('error', `Launched ${ok} of ${pending.length}`, `Failed: ${names}. See the activity log.`)
         }
         if (ok > 0) maybeAutoHide()
         return ok
     }
 
     async function stopAll({ quiet = false } = {}) {
+        launchBatch++
         const filenames = new Set<string>()
         for (const g of games.value) {
             for (const exe of g.executables) {
@@ -548,8 +604,12 @@ export const useGameLibrary = createGlobalState(() => {
         const count = runningGames.value.length
         batchBusy.value = 'stop'
         try {
-            await Promise.all([...filenames].map(stopFilename))
+            // all at once on the Rust side: one look at the running programs, not one per game
+            await invoke('stop_processes', { exec_names: [...filenames] })
+        } catch (error) {
+            addLog('error', `Failed to stop some games: ${errorMessage(error)}`)
         } finally {
+            markStoppedAll(filenames)
             batchBusy.value = null
         }
         addLog('info', `Stopped all games (${count})`)

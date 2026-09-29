@@ -1,6 +1,6 @@
 [package]
 name = "discord-quest-completer"
-version = "1.2.2"
+version = "1.3.0"
 description = "Questly: complete Discord quests without keeping the game open"
 authors = ["svyixiu", "Mark Terence Tiglao (original Discord Quest Completer)"]
 edition = "2021"
@@ -27,6 +27,7 @@ tokio = "1.44.2"
 once_cell = "1.21.3"
 tauri-plugin-http = "2"
 tauri-plugin-dialog = "2"
+tauri-plugin-single-instance = "2"
 reqwest = { version = "=0.11", features = ["json", "multipart", "brotli", "gzip", "blocking"] }
 
 [target.'cfg(windows)'.dependencies]

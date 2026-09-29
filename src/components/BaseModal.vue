@@ -5,8 +5,8 @@ let nextId = 1;
 </script>
 
 <script setup lang="ts">
-import { useEventListener } from '@vueuse/core';
-import { onUnmounted, watch } from 'vue';
+import { useEventListener, useResizeObserver } from '@vueuse/core';
+import { onUnmounted, ref, watch } from 'vue';
 
 const props = withDefaults(defineProps<{
     open: boolean;
@@ -40,6 +40,20 @@ function requestClose() {
     if (!props.persistent) emit('close');
 }
 
+// Like the title bar: a line wherever the body's content is cut, so scrolled
+// content never just ends at the title or the buttons.
+const body = ref<HTMLElement>();
+const content = ref<HTMLElement>();
+const cutTop = ref(false);
+const cutBottom = ref(false);
+function measure() {
+    const el = body.value;
+    if (!el) return;
+    cutTop.value = el.scrollTop > 1;
+    cutBottom.value = el.scrollTop + el.clientHeight < el.scrollHeight - 1;
+}
+useResizeObserver([body, content], measure);
+
 useEventListener(window, 'keydown', (e: KeyboardEvent) => {
     if (props.open && e.key === 'Escape' && stack[stack.length - 1] === id) {
         e.stopPropagation();
@@ -64,15 +78,19 @@ useEventListener(window, 'keydown', (e: KeyboardEvent) => {
                     </button>
                     <span v-else-if="!bare" class="dot static" aria-hidden="true"></span>
 
-                    <div v-if="!bare" class="px-7 pt-7 pb-1 pr-12">
+                    <div v-if="!bare" class="edge px-7 pt-7 pb-2 pr-12" :class="{ cut: cutTop }">
                         <div v-if="eyebrow" class="eyebrow mb-2">{{ eyebrow }}</div>
                         <h2 class="display text-[28px] leading-[30px] text-ink">{{ title }}</h2>
                         <p v-if="subtitle" class="text-[15px] text-muted mt-2 leading-snug">{{ subtitle }}</p>
                     </div>
-                    <div class="min-h-0 overflow-y-auto" :class="bare ? '' : 'px-7 pb-6 pt-3'">
-                        <slot />
+                    <div ref="body" class="min-h-0 overflow-y-auto" @scroll.passive="measure"
+                        :class="bare ? '' : ['px-7 pt-2', $slots.footer ? 'pb-2' : 'pb-6']">
+                        <div ref="content">
+                            <slot />
+                        </div>
                     </div>
-                    <div v-if="$slots.footer" class="px-7 pb-6 flex items-center justify-end gap-2">
+                    <div v-if="$slots.footer" class="edge top px-7 pt-4 pb-6 flex items-center justify-end gap-2"
+                        :class="{ cut: cutBottom }">
                         <slot name="footer" />
                     </div>
                 </div>
@@ -122,6 +140,20 @@ useEventListener(window, 'keydown', (e: KeyboardEvent) => {
 
 .dot:not(.static):hover svg {
     opacity: 1;
+}
+
+.edge {
+    border-bottom: 1px solid transparent;
+    transition: border-color 180ms ease;
+}
+
+.edge.top {
+    border-bottom: 0;
+    border-top: 1px solid transparent;
+}
+
+.edge.cut {
+    border-color: var(--line);
 }
 
 .modal-enter-active,

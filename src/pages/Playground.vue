@@ -24,7 +24,7 @@
             <div ref="logContainer" v-smooth class="flex-1 min-h-0 overflow-y-auto px-6 pb-6">
                 <div v-if="visibleLogs.length === 0" class="h-full grid place-items-center text-sm text-muted">Nothing yet.</div>
                 <ol v-else class="timeline selectable">
-                    <li v-for="log in visibleLogs" :key="log.id" class="entry" :class="log.type">
+                    <li v-for="log in visibleLogs" :key="log.id" v-memo="[log]" class="entry" :class="log.type">
                         <span class="dot"></span>
                         <span class="time">{{ time(log.timestamp) }}</span>
                         <span class="msg">
@@ -42,7 +42,8 @@
 import { computed, nextTick, ref, useTemplateRef, watch } from 'vue';
 import { invoke } from '@tauri-apps/api/core';
 import { emit } from '@tauri-apps/api/event';
-import { useGlobalState } from '@/composables/app-state';
+import { useEventListener } from '@vueuse/core';
+import { Pages, useGlobalState } from '@/composables/app-state';
 import { useGameLibrary } from '@/composables/game-library';
 import { useToasts } from '@/composables/toasts';
 import { useRpcState } from '@/composables/rpc-state';
@@ -69,18 +70,34 @@ const visibleLogs = computed(() =>
     filter.value === 'all' ? logs.value : logs.value.filter(l => l.type === filter.value)
 );
 
+// one formatter for every entry (toLocaleTimeString builds a new one per call,
+// which added up with hundreds of entries redrawn on each new line)
+const timeFormat = new Intl.DateTimeFormat([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 function time(d: Date) {
-    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    return timeFormat.format(d);
 }
 
-// Keep the view pinned to the newest entry, unless the user scrolled up
+// Keep the view pinned to the newest entry, unless the user scrolled up. While
+// the page is hidden nothing scrolls; it catches up when it's shown again.
+const { page } = useGlobalState();
 const logContainer = useTemplateRef<HTMLElement>('logContainer');
-watch(() => logs.value.length, async () => {
+const pinned = ref(true);
+useEventListener(logContainer, 'scroll', () => {
     const el = logContainer.value;
-    if (!el) return;
-    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+    if (el && el.clientHeight > 0) pinned.value = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+}, { passive: true });
+// the list is replaced on every new line (it keeps the last 500), so watch the list, not its length
+watch(logs, async () => {
+    if (page.value !== Pages.PLAYGROUND || !pinned.value) return;
     await nextTick();
-    if (nearBottom) smoothScrollTo(el, el.scrollHeight);
+    const el = logContainer.value;
+    if (el) smoothScrollTo(el, el.scrollHeight);
+});
+watch(page, async p => {
+    if (p !== Pages.PLAYGROUND || !pinned.value) return;
+    await nextTick();
+    const el = logContainer.value;
+    if (el) el.scrollTop = el.scrollHeight;
 });
 
 /** Sets a plain "Playing <selected game>" activity: the game's own app ID, nothing else. */

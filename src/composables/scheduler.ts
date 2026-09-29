@@ -1,5 +1,5 @@
 import { createGlobalState } from '@vueuse/core'
-import { computed, ref } from 'vue'
+import { computed, ref, toRaw } from 'vue'
 import type { Game } from '@/types/types'
 import { defaultExecutable, formatDuration, isGameRunning, runningExecutable } from '@/utils/executables'
 import { useGameLibrary } from './game-library'
@@ -39,6 +39,8 @@ export interface RunItem {
 export interface TimedRun {
     mode: TimerMode;
     order: TimerOrder;
+    /** "One after another": how many games play at the same time (1 = strictly one by one) */
+    atOnce: number;
     durationMs: number;
     waitForDiscord: boolean;
     items: RunItem[];
@@ -49,7 +51,12 @@ export interface StartOptions {
     mode: TimerMode;
     order: TimerOrder;
     waitForDiscord: boolean;
+    /** "One after another" only: games that play at the same time (default 1) */
+    atOnce?: number;
 }
+
+/** Choices for "One after another": how many games at the same time. */
+export const AT_ONCE_CHOICES = [1, 2, 3, 5, 10] as const
 
 export function shuffle<T>(list: T[]): T[] {
     const a = [...list]
@@ -79,7 +86,8 @@ export const useScheduler = createGlobalState(() => {
         const r = run.value
         if (!r || r.items.length === 0) return 0
         let sum = 0
-        for (const item of r.items) {
+        // read without tracking every game: the caller asks again on each clock tick
+        for (const item of toRaw(r.items)) {
             if (item.state === 'done' || item.state === 'failed') sum += 1
             else if (item.state === 'running' && item.endsAt) sum += 1 - Math.max(0, item.endsAt - now) / r.durationMs
             else if (item.remainingMs !== undefined) sum += 1 - item.remainingMs / r.durationMs
@@ -115,7 +123,11 @@ export const useScheduler = createGlobalState(() => {
         item.launchedAt = Date.now()
         const wasRunning = isGameRunning(game)
         const ok = wasRunning || await library.launch(game, undefined, { quiet: true })
-        if (myToken !== token) return 'cancelled'
+        if (myToken !== token) {
+            // cancelled (Stop all, Panic…) while it was starting: it would miss that stop
+            if (ok && !wasRunning) await library.stop(game, undefined, { quiet: true })
+            return 'cancelled'
+        }
         if (!ok) {
             item.state = 'failed'
             toast('error', `Skipped ${game.name}`, "It couldn't be launched. See the activity log.")
@@ -184,12 +196,14 @@ export const useScheduler = createGlobalState(() => {
     }
 
     /**
-     * "All at once", as a pool: without a limit every game starts right away
-     * (a little apart while Performance Guard watches, so a struggling PC is
-     * noticed early). When the guard lowers its limit, the game with the most
-     * time left is paused and put back in the queue.
+     * A pool of games playing at the same time, in queue order. "All at once"
+     * has no limit, so every game starts right away (a little apart while
+     * Performance Guard watches, so a struggling PC is noticed early); "One after
+     * another" with several at a time keeps `maxAtOnce` going, starting the next
+     * as soon as one finishes. When the guard lowers its limit, the game with the
+     * most time left is paused and put back in the queue.
      */
-    async function runParallel(r: TimedRun, myToken: number) {
+    async function runPool(r: TimedRun, myToken: number, maxAtOnce = Infinity) {
         const queue = [...r.items]
         const inFlight = new Map<RunItem, Promise<void>>()
         let played = 0
@@ -199,7 +213,7 @@ export const useScheduler = createGlobalState(() => {
         guard.begin(() => inFlight.size, () => inFlight.size + queue.length)
         try {
             while (myToken === token && (queue.length > 0 || inFlight.size > 0)) {
-                const cap = guard.enabled.value && guard.limit.value !== null ? guard.limit.value : Infinity
+                const cap = Math.min(maxAtOnce, guard.enabled.value && guard.limit.value !== null ? guard.limit.value : Infinity)
                 const active = [...inFlight.keys()].filter(i => !i.shed)
                 if (active.length > cap) {
                     const now = Date.now()
@@ -233,6 +247,7 @@ export const useScheduler = createGlobalState(() => {
             return
         }
         const mode: TimerMode = targets.length > 1 ? options.mode : 'parallel'
+        const atOnce = mode === 'sequential' ? Math.max(1, Math.min(targets.length, Math.round(options.atOnce ?? 1))) : 1
         const myToken = ++token
         hidOnce = false
         settings.value.timerSeconds = seconds
@@ -240,23 +255,29 @@ export const useScheduler = createGlobalState(() => {
         if (targets.length > 1) {
             settings.value.timerMode = options.mode
             settings.value.timerOrder = options.order
+            if (mode === 'sequential') settings.value.timerAtOnce = options.atOnce ?? 1
         }
 
         run.value = {
             mode,
             order: options.order,
+            atOnce,
             durationMs: Math.max(1000, Math.round(seconds * 1000)),
             waitForDiscord: options.waitForDiscord,
             items: targets.map(g => ({ uid: g.uid!, state: 'queued' as const })),
             startedAt: Date.now(),
         }
         const r = run.value
-        addLog('info', `Timed run started: ${targets.length} game(s), ${formatDuration(seconds)} each, ${mode}${mode === 'sequential' ? ` (${options.order} order)` : ''}${options.waitForDiscord ? ', waiting for Discord' : ''}`)
+        const how = mode === 'sequential' ? `one after another${atOnce > 1 ? `, ${atOnce} at a time` : ''} (${options.order} order)` : 'all at once'
+        addLog('info', `Timed run started: ${targets.length} game(s), ${formatDuration(seconds)} each, ${how}${options.waitForDiscord ? ', waiting for Discord' : ''}`)
 
         try {
             let played = 0
             if (mode === 'parallel') {
-                played = await runParallel(r, myToken)
+                played = await runPool(r, myToken)
+            } else if (atOnce > 1) {
+                // several at a time: each slot takes the next game as soon as one finishes
+                played = await runPool(r, myToken, atOnce)
             } else {
                 for (const item of r.items) {
                     if (myToken !== token) break
@@ -293,15 +314,21 @@ export const useScheduler = createGlobalState(() => {
         if (!quiet) toast('info', 'Timed run cancelled')
     }
 
+    // Every library row asks for its status, so it must be instant with thousands
+    // of games in a run: a uid -> position map (the list of items never changes
+    // during a run), and the first game still waiting, worked out once.
+    const itemIndex = computed(() => new Map((run.value?.items ?? []).map((item, i) => [item.uid, i])))
+    const firstQueued = computed(() => run.value?.items.findIndex(i => i.state === 'queued') ?? -1)
+
     function statusFor(uid: string): (RunItem & { position: number }) | null {
         const r = run.value
         if (!r) return null
-        const index = r.items.findIndex(i => i.uid === uid)
-        if (index < 0) return null
+        const index = itemIndex.value.get(uid)
+        if (index === undefined) return null
+        const item = r.items[index]
         // position among games still waiting their turn (sequential)
-        const firstPending = r.items.findIndex(i => i.state === 'queued')
-        const position = r.items[index].state === 'queued' && firstPending >= 0 ? index - firstPending + 1 : 0
-        return { ...r.items[index], position }
+        const position = item.state === 'queued' && firstQueued.value >= 0 ? index - firstQueued.value + 1 : 0
+        return { ...item, position }
     }
 
     return { run, isActive, start, cancel, startNow, statusFor, progress }

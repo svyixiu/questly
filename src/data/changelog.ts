@@ -30,6 +30,27 @@ export const CHANGE_KINDS: { id: ChangeKind; label: string }[] = [
 
 export const CHANGELOG: Release[] = [
     {
+        version: '1.3.0',
+        date: '2026-09-30',
+        title: 'Several at a time, and thousands of games',
+        changes: [
+            { kind: 'new', text: 'One after another can play 2, 3, 5 or 10 games at a time. Each still waits for Discord and counts down on its own; when one is done, the next in line takes its place.' },
+            { kind: 'new', text: 'Only one Questly runs at a time. Opening it again brings the open window forward instead of adding a second window and tray icon. Opening a different Questly.exe, such as a new download, hands over to it so it can update.' },
+            { kind: 'new', text: 'The title bar has a button that hides the library: an X folds it away and three lines bring it back. Ctrl+B does the same.' },
+            { kind: 'new', text: 'Always on top keeps Questly above every other window. Turn it on with the pin in the title bar or in Settings.' },
+            { kind: 'new', text: 'Launch all asks first when it would start more than 25 games, and offers a timed run instead.' },
+            { kind: 'fixed', text: "Stop all didn't work while Launch all was still starting games, so games kept appearing. Now it stops the rest from starting too." },
+            { kind: 'fixed', text: 'Stopping a timed run while a game was just starting could leave that game running.' },
+            { kind: 'fixed', text: 'Dialogs whose content scrolls now show a line where it gets cut, like the title bar does.' },
+            { kind: 'fixed', text: "The Activity log stopped following new entries once it held 500 lines." },
+            { kind: 'performance', text: 'Switching to the Library tab with hundreds of games no longer stutters. Pages switch without a blur effect, and rows out of view skip drawing.' },
+            { kind: 'performance', text: 'Big timed runs start without freezing the app. The run list shows the last few finished games, the ones playing and the next ones in line, not all of them.' },
+            { kind: 'performance', text: 'Stop all ends every game in one go, so stopping thousands takes about as long as stopping one.' },
+            { kind: 'performance', text: 'Questly starts faster with a big library, and adding games no longer draws the whole list.' },
+            { kind: 'performance', text: 'The timed run dialog opens instantly with thousands of games and shows the first 50 in line.' },
+        ],
+    },
+    {
         version: '1.2.2',
         date: '2026-09-29',
         title: 'No more console windows',

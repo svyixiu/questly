@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, ref, TransitionGroup, watch } from 'vue';
 import type { Game } from '@/types/types';
 import { useSettings } from '@/composables/settings';
-import { shuffle, useScheduler, type TimerMode, type TimerOrder } from '@/composables/scheduler';
+import { AT_ONCE_CHOICES, shuffle, useScheduler, type TimerMode, type TimerOrder } from '@/composables/scheduler';
 import { useDiscordDetect } from '@/composables/discord-detect';
 import { defaultExecutable, formatDuration } from '@/utils/executables';
 import { vSmooth } from '@/directives/smooth-scroll';
@@ -42,6 +42,7 @@ function nudge(e: KeyboardEvent, field: 'm' | 's') {
 }
 const mode = ref<TimerMode>('parallel');
 const order = ref<TimerOrder>('fixed');
+const atOnce = ref(1);
 const waitForDiscord = ref(true);
 const shuffled = ref<Game[]>([]);
 
@@ -57,6 +58,7 @@ watch(() => props.open, open => {
     setTotal(settings.value.timerSeconds);
     mode.value = settings.value.timerMode;
     order.value = settings.value.timerOrder;
+    atOnce.value = settings.value.timerAtOnce ?? 1;
     waitForDiscord.value = settings.value.timerWaitForDiscord;
     shuffled.value = shuffle(launchable.value);
 }, { immediate: true });
@@ -76,7 +78,27 @@ const valid = computed(() => total.value >= 1 && total.value <= MAX_SECONDS);
 const sequential = computed(() => multi.value && mode.value === 'sequential');
 const ordered = computed(() => sequential.value && order.value === 'random' ? shuffled.value : launchable.value);
 
-const totalRun = computed(() => sequential.value ? total.value * launchable.value.length : total.value);
+/** "At a time" choices that make sense for this many games (1 is always there). */
+const atOnceChoices = computed(() => AT_ONCE_CHOICES.filter(n => n === 1 || n < launchable.value.length));
+/** the count actually used: a remembered 10 becomes 3 for 4 games */
+const slots = computed(() => Math.max(1, Math.min(atOnce.value, launchable.value.length)));
+
+// The queue preview shows the first games only: thousands of rows would make
+// the dialog slow to open and to shuffle, and nobody reads past the top.
+const PREVIEW = 50;
+const preview = computed(() => ordered.value.slice(0, PREVIEW));
+const notShown = computed(() => ordered.value.length - preview.value.length);
+// a new order (fixed/random, shuffle) redraws a long queue's preview in one piece
+const reshuffles = ref(0);
+const previewKey = computed(() => `${sequential.value && order.value === 'random' ? 'random' : 'fixed'}-${reshuffles.value}`);
+
+function reshuffle() {
+    shuffled.value = shuffle(launchable.value);
+    reshuffles.value++;
+}
+
+// several at a time: rounds of `slots` games, each taking the time per game
+const totalRun = computed(() => sequential.value ? total.value * Math.ceil(launchable.value.length / slots.value) : total.value);
 
 function start() {
     normalize();
@@ -84,6 +106,7 @@ function start() {
     scheduler.start(ordered.value, total.value, {
         mode: mode.value,
         order: order.value,
+        atOnce: slots.value,
         waitForDiscord: waitForDiscord.value && discord.available.value,
     });
     emit('close');
@@ -135,11 +158,17 @@ function start() {
         <!-- Mode + order -->
         <Transition name="rise">
             <div v-if="multi" class="mt-5">
-                <div class="eyebrow mb-2">How to run {{ launchable.length }} games</div>
+                <div class="eyebrow mb-2">How to run {{ launchable.length.toLocaleString() }} games</div>
                 <div class="seg">
                     <button :class="{ on: mode === 'parallel' }" @click="mode = 'parallel'">All at once</button>
                     <button :class="{ on: mode === 'sequential' }" @click="mode = 'sequential'">One after another</button>
                 </div>
+                <Transition name="rise">
+                    <p v-if="mode === 'parallel' && launchable.length > 25" class="mt-2 text-xs text-warn leading-snug">
+                        {{ launchable.length.toLocaleString() }} games at the same time can slow your PC down. One after
+                        another with 5 or 10 at a time gets through them steadily.
+                    </p>
+                </Transition>
 
                 <Transition name="rise">
                     <div v-if="mode === 'sequential'" class="mt-3">
@@ -150,20 +179,41 @@ function start() {
                             </div>
                             <Transition name="pop">
                                 <button v-if="order === 'random'" class="icon-btn" data-tip="Shuffle again"
-                                    @click="shuffled = shuffle(launchable)">
+                                    @click="reshuffle">
                                     <svg viewBox="0 0 24 24" class="w-[18px] h-[18px]" fill="none" stroke="currentColor" stroke-width="2"
                                         stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5" /></svg>
                                 </button>
                             </Transition>
                         </div>
-                        <div v-smooth class="mt-2 max-h-40 overflow-y-auto rounded-2xl bg-glass border border-line p-1.5">
-                            <TransitionGroup name="list" tag="div" class="relative">
-                                <div v-for="(g, i) in ordered" :key="g.uid" class="flex items-center gap-2.5 px-2 py-1 rounded-xl">
-                                    <span class="w-4 text-right text-xs font-semibold text-faint tabular-nums">{{ i + 1 }}</span>
+                        <div class="mt-3 flex items-center justify-between gap-3">
+                            <div class="min-w-0">
+                                <div class="text-sm font-semibold text-ink">At a time</div>
+                                <div class="text-xs text-muted mt-0.5 leading-snug">
+                                    <template v-if="slots === 1">One game plays, then the next one starts.</template>
+                                    <template v-else>{{ slots }} play together; when one's done, the next in line takes its place.</template>
+                                </div>
+                            </div>
+                            <div class="seg shrink-0" role="radiogroup" aria-label="Games at a time">
+                                <button v-for="n in atOnceChoices" :key="n" role="radio" :aria-checked="slots === n"
+                                    class="tabular-nums" :class="{ on: slots === n }" @click="atOnce = n">{{ n }}</button>
+                            </div>
+                        </div>
+                        <div v-smooth class="mt-3 max-h-40 overflow-y-auto rounded-2xl bg-glass border border-line p-1.5">
+                            <!-- the whole queue fits: games glide to their new places; a longer
+                                 queue swaps its first rows in one fade (they're mostly new games) -->
+                            <component :is="notShown > 0 ? 'div' : TransitionGroup" :key="notShown > 0 ? previewKey : 'all'"
+                                v-bind="notShown > 0 ? { class: 'relative queue-swap' } : { name: 'list', tag: 'div', class: 'relative' }">
+                                <div v-for="(g, i) in preview" :key="g.uid" class="flex items-center gap-2.5 px-2 py-1 rounded-xl">
+                                    <span class="w-5 text-right text-xs font-semibold tabular-nums"
+                                        :class="i < slots ? 'text-ink' : 'text-faint'">{{ i + 1 }}</span>
                                     <GameAvatar :game="g" :size="22" />
                                     <span class="text-[13px] text-ink-2 truncate">{{ g.name }}</span>
+                                    <span v-if="i < slots && slots > 1" class="ml-auto shrink-0 text-[11px] font-semibold text-muted">starts first</span>
                                 </div>
-                            </TransitionGroup>
+                            </component>
+                            <div v-if="notShown > 0" class="px-2 py-1.5 text-xs text-muted">
+                                and {{ notShown.toLocaleString() }} more after these
+                            </div>
                         </div>
                     </div>
                 </Transition>
@@ -252,6 +302,17 @@ function start() {
     background: var(--btn);
     border-color: var(--btn);
     color: var(--btn-ink);
+}
+
+.queue-swap {
+    animation: queue-in 320ms ease both;
+}
+
+@keyframes queue-in {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
 }
 
 .option {

@@ -5,6 +5,7 @@ import type { Game } from '@/types/types';
 import { Pages, useGlobalState } from '@/composables/app-state';
 import { useGameLibrary } from '@/composables/game-library';
 import { useScheduler } from '@/composables/scheduler';
+import { useSettings } from '@/composables/settings';
 import { isGameRunning } from '@/utils/executables';
 import { smoothScrollIntoView, vSmooth } from '@/directives/smooth-scroll';
 import Spotlight from '@/components/Spotlight.vue';
@@ -15,8 +16,10 @@ import ActivityPanel from '@/components/ActivityPanel.vue';
 import AnimatedCheckbox from '@/components/AnimatedCheckbox.vue';
 import ShortcutsModal from '@/components/ShortcutsModal.vue';
 import TimerModal from '@/components/TimerModal.vue';
+import BaseModal from '@/components/BaseModal.vue';
 
 const { page } = useGlobalState();
+const { settings } = useSettings();
 const library = useGameLibrary();
 const scheduler = useScheduler();
 const { run: timedRun } = scheduler;
@@ -41,7 +44,11 @@ const CHUNK = 100;
 const ROWS_PER_FRAME = 25;
 const shown = ref(CHUNK);
 const loadingMore = ref(false);
-const shownGames = computed(() => games.value.slice(0, shown.value));
+// Only the first chunk animates adds, removes and moves: an animated list
+// measures every row it holds each time it changes, so drawing more rows at
+// the end would get slower and slower. The rest is a plain list.
+const headGames = computed(() => games.value.slice(0, CHUNK));
+const tailGames = computed(() => games.value.slice(CHUNK, shown.value));
 const remaining = computed(() => Math.max(0, games.value.length - shown.value));
 const skeletonRows = computed(() => Math.min(remaining.value, 6));
 
@@ -66,14 +73,18 @@ useIntersectionObserver(moreRef, ([entry]) => { nearEnd.value = !!entry?.isInter
 // keeps going while the end stays in view (a tall window, or a fast scroll)
 watch([nearEnd, loadingMore], ([near, busy]) => { if (near && !busy) loadMore(); });
 
-// a game further down (keyboard focus, just added) is drawn right away so it can be shown
+// Walking down with the keyboard draws the next rows right away so the focused
+// one can be scrolled to. A far jump (games just added to the end of a big
+// library) doesn't: that would draw thousands of rows nobody scrolled to.
 watch(focusedUid, uid => {
     const index = games.value.findIndex(g => g.uid === uid);
-    if (index >= shown.value) shown.value = Math.min(games.value.length, Math.ceil((index + 1) / CHUNK) * CHUNK);
+    if (index >= shown.value && index < shown.value + CHUNK) {
+        shown.value = Math.min(games.value.length, Math.ceil((index + 1) / CHUNK) * CHUNK);
+    }
 });
 
 const launchTargets = computed(() => someChecked.value ? checkedGames.value : games.value);
-const launchLabel = computed(() => someChecked.value ? `Launch ${checked.value.size}` : 'Launch all');
+const launchLabel = computed(() => someChecked.value ? `Launch ${checked.value.size.toLocaleString()}` : 'Launch all');
 const canLaunch = computed(() =>
     batchBusy.value === null && launchTargets.value.some(g => !isGameRunning(g))
 );
@@ -113,15 +124,34 @@ function removeCheckedOrFocused() {
     else if (focusedGame.value) library.removeGame(focusedGame.value);
 }
 
+// Starting hundreds of games in one go can bog a PC down, so a big batch asks
+// first and offers a timed run (which can go through them a few at a time).
+const LAUNCH_CONFIRM_OVER = 25;
+const confirmCount = ref(0);
+
 function launchTargetsNow() {
+    if (!canLaunch.value) return;
+    const count = launchTargets.value.filter(g => !isGameRunning(g)).length;
+    if (count > LAUNCH_CONFIRM_OVER) confirmCount.value = count;
+    else library.launchMany(launchTargets.value);
+}
+
+function confirmLaunch() {
+    confirmCount.value = 0;
     if (canLaunch.value) library.launchMany(launchTargets.value);
 }
 
+function timedRunInstead() {
+    confirmCount.value = 0;
+    openTimer();
+}
+
 async function stopAllNow() {
-    if (batchBusy.value !== null) return;
+    if (batchBusy.value === 'stop') return;
     // stopping everything also ends a timed run, rather than letting it move on
     if (scheduler.isActive.value) await scheduler.cancel({ stopGames: false, quiet: true });
-    if (runningGames.value.length > 0) library.stopAll();
+    // …and a Launch all that's still starting games
+    if (runningGames.value.length > 0 || batchBusy.value === 'launch') library.stopAll();
 }
 
 // ----- keyboard shortcuts -----
@@ -181,9 +211,9 @@ const searchExamples = ['VALORANT', 'Genshin Impact', 'Fortnite', 'Minecraft', '
 </script>
 
 <template>
-    <div class="h-full grid grid-cols-[336px_minmax(0,1fr)] gap-4 px-4 pt-3 pb-4">
-        <!-- ===== Library column ===== -->
-        <section class="glass flex flex-col min-h-0 overflow-hidden">
+    <div class="layout h-full grid px-4 pt-3 pb-4" :class="{ collapsed: settings.libraryCollapsed }">
+        <!-- ===== Library column (folds away with the title bar's hamburger or Ctrl+B) ===== -->
+        <section class="library glass flex flex-col min-h-0 overflow-hidden" :inert="settings.libraryCollapsed">
             <!-- title + search; the line under it is where the list scrolls away -->
             <div class="shrink-0 flex flex-col border-b border-line">
             <div class="flex items-center gap-2 px-5 pt-4 pb-3">
@@ -211,10 +241,15 @@ const searchExamples = ['VALORANT', 'Genshin Impact', 'Fortnite', 'Minecraft', '
 
             <div ref="listRef" v-smooth class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-2.5 pt-2 pb-2">
                 <TransitionGroup name="list" tag="div" class="relative flex flex-col gap-1">
-                    <LibraryRow v-for="(game, index) in shownGames" :key="game.uid" :game="game"
+                    <LibraryRow v-for="(game, index) in headGames" :key="game.uid" :game="game"
                         :focused="focusedUid === game.uid" :some-checked="someChecked"
                         @focus="focusedUid = game.uid!" @check="onCheck(game, index, $event)" />
                 </TransitionGroup>
+                <div v-if="tailGames.length" class="flex flex-col gap-1 mt-1">
+                    <LibraryRow v-for="(game, index) in tailGames" :key="game.uid" :game="game"
+                        :focused="focusedUid === game.uid" :some-checked="someChecked"
+                        @focus="focusedUid = game.uid!" @check="onCheck(game, index + CHUNK, $event)" />
+                </div>
 
                 <!-- where the next chunk of a big library comes in -->
                 <div v-if="remaining > 0" ref="moreRef" class="flex flex-col gap-1 mt-1" aria-hidden="true">
@@ -247,7 +282,8 @@ const searchExamples = ['VALORANT', 'Genshin Impact', 'Fortnite', 'Minecraft', '
                     <svg viewBox="0 0 24 24" class="w-[18px] h-[18px]" fill="none" stroke="currentColor" stroke-width="2.2"
                         stroke-linecap="round"><circle cx="12" cy="13" r="8" /><path d="M12 9v4l2.5 2M9 2h6" /></svg>
                 </button>
-                <button class="btn btn-danger !px-3" :disabled="(runningGames.length === 0 && !timedRun) || batchBusy !== null"
+                <button class="btn btn-danger !px-3"
+                    :disabled="(runningGames.length === 0 && !timedRun && batchBusy !== 'launch') || batchBusy === 'stop'"
                     data-tip="Stop all (Ctrl+Shift+L)" @click="stopAllNow">
                     <span v-if="batchBusy === 'stop'" class="spinner"></span>
                     <svg v-else viewBox="0 0 24 24" class="w-4 h-4" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2.5" /></svg>
@@ -297,10 +333,47 @@ const searchExamples = ['VALORANT', 'Genshin Impact', 'Fortnite', 'Minecraft', '
         <Spotlight :open="spotlightOpen" @close="spotlightOpen = false" />
         <ShortcutsModal :open="shortcutsOpen" @close="shortcutsOpen = false" />
         <TimerModal :open="timerOpen" :games="launchTargets" :from-selection="someChecked" @close="timerOpen = false" />
+        <BaseModal :open="confirmCount > 0" eyebrow="Launch" :title="`Start ${confirmCount.toLocaleString()} games at once?`"
+            width="30rem" @close="confirmCount = 0">
+            <p class="text-[15px] text-muted leading-snug">
+                Each one is a small program that stays open until you stop it. This many at the same time can slow your PC
+                down. A timed run can play them one after another, a few at a time, and stop each one when it's done.
+            </p>
+            <template #footer>
+                <button class="btn btn-glass" @click="confirmCount = 0">Cancel</button>
+                <button class="btn btn-glass" @click="timedRunInstead">Timed run instead</button>
+                <button class="btn btn-primary" @click="confirmLaunch">Launch {{ confirmCount.toLocaleString() }}</button>
+            </template>
+        </BaseModal>
     </div>
 </template>
 
 <style scoped>
+.layout {
+    grid-template-columns: 336px minmax(0, 1fr);
+    column-gap: 1rem;
+    row-gap: 1rem;
+    transition: grid-template-columns 520ms var(--ease-quint), column-gap 520ms var(--ease-quint);
+}
+
+.layout.collapsed {
+    grid-template-columns: 0px minmax(0, 1fr);
+    column-gap: 0px;
+}
+
+/* keeps its width while the column closes, sliding away under the details */
+.library {
+    width: 336px;
+    transition: opacity 260ms ease, transform 520ms var(--ease-quint), visibility 0s;
+}
+
+.collapsed .library {
+    opacity: 0;
+    transform: translateX(-24px);
+    visibility: hidden;
+    transition: opacity 200ms ease, transform 520ms var(--ease-quint), visibility 0s 520ms;
+}
+
 .search {
     border: 1px solid var(--line-strong);
     transition: background-color 160ms ease, border-color 160ms ease;

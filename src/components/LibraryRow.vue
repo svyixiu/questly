@@ -22,8 +22,15 @@ const now = useClock();
 
 type Tone = 'timer' | 'playing' | 'waiting' | 'queued' | 'idle';
 
-/** Second line under the game's name (only depends on the clock while it shows a live time). */
-const line = computed(status);
+/**
+ * Second line under the game's name (only depends on the clock while it shows a
+ * live time). It keeps the same object while the text stays the same, so a
+ * timed run moving along only redraws the rows whose line really changed.
+ */
+const line = computed<{ text: string; tone: Tone }>(previous => {
+    const next = status();
+    return previous && previous.text === next.text && previous.tone === next.tone ? previous : next;
+});
 
 function status(): { text: string; tone: Tone } {
     const game = props.game;
@@ -31,7 +38,8 @@ function status(): { text: string; tone: Tone } {
     if (t?.state === 'running' && t.endsAt) return { text: `${formatElapsed(Math.max(0, t.endsAt - now.value.getTime()))} left`, tone: 'timer' };
     if (t?.state === 'waiting') return { text: 'Waiting for Discord…', tone: 'waiting' };
     if (t?.state === 'queued' && t.pausedByGuard) return { text: 'Paused by Performance Guard', tone: 'waiting' };
-    if (t?.state === 'queued') return { text: t.position ? `Up next · #${t.position}` : 'Queued', tone: 'queued' };
+    // a place in line only while it's near; far back it's just "Queued"
+    if (t?.state === 'queued') return { text: t.position && t.position <= 99 ? `Up next · #${t.position}` : 'Queued', tone: 'queued' };
     const exe = runningExecutable(game);
     if (exe) return { text: `Playing · ${exe.started_at ? formatElapsed(now.value.getTime() - exe.started_at) : ''}`, tone: 'playing' };
     if (t?.state === 'done') return { text: 'Done ✓', tone: 'idle' };
@@ -78,6 +86,10 @@ function play() {
 <style scoped>
 .row {
     transition: background-color 160ms ease, box-shadow 200ms ease;
+    /* rows out of view skip layout and painting, so showing the Library page
+       again stays quick however far the list was scrolled */
+    content-visibility: auto;
+    contain-intrinsic-size: auto 56px;
 }
 
 .row:hover {

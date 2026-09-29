@@ -63,6 +63,8 @@ export interface AppSettings {
     timerSeconds: number;
     timerMode: 'parallel' | 'sequential';
     timerOrder: 'fixed' | 'random';
+    /** "One after another": how many games play at the same time */
+    timerAtOnce: number;
     /** only start a game's countdown once Discord reports it as detected */
     timerWaitForDiscord: boolean;
     /** give up waiting for Discord after this long and start the countdown anyway */
@@ -74,6 +76,10 @@ export interface AppSettings {
     termsVersion: string | null;
     /** how a launched game's window appears (Auto hide always hides it) */
     gameWindowMode: 'hidden' | 'parked' | 'visible';
+    /** keep Questly's window above every other window */
+    alwaysOnTop: boolean;
+    /** the library panel on the Library page is folded away */
+    libraryCollapsed: boolean;
     perfGuard: GuardSettings;
     buddy: BuddySettings;
 }
@@ -119,12 +125,15 @@ const DEFAULTS: AppSettings = {
     timerSeconds: 15 * 60,
     timerMode: 'parallel',
     timerOrder: 'fixed',
+    timerAtOnce: 1,
     timerWaitForDiscord: true,
     detectTimeoutSec: 120,
     riskAcceptedAt: null,
     termsAcceptedAt: null,
     termsVersion: null,
     gameWindowMode: 'parked',
+    alwaysOnTop: false,
+    libraryCollapsed: false,
     perfGuard: { enabled: true, sensitivity: 'balanced' },
     buddy: DEFAULT_BUDDY,
 }

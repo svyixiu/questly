@@ -2,6 +2,7 @@
 //! Panic Abort and "Launch on startup".
 
 use serde::Serialize;
+use std::collections::HashSet;
 use std::path::PathBuf;
 use std::sync::Mutex;
 
@@ -259,20 +260,32 @@ fn process_file_name(pid: u32) -> Option<String> {
 
 /// Takes down the tray icons of the game windows running as `exe_name`, before they're stopped.
 pub fn remove_runner_tray_icons(exe_name: &str) {
+    remove_runner_tray_icons_of(&HashSet::from([exe_name.to_lowercase()]));
+}
+
+/// The same for several games (`exe_names` in lowercase), in one pass over the
+/// game windows however many are running.
+pub fn remove_runner_tray_icons_of(exe_names: &HashSet<String>) {
     #[cfg(target_os = "windows")]
     for (hwnd, pid) in runner_windows() {
-        if process_file_name(pid).is_some_and(|name| name.eq_ignore_ascii_case(exe_name)) {
+        if process_file_name(pid).is_some_and(|name| exe_names.contains(&name.to_lowercase())) {
             remove_runner_tray_icon(hwnd);
         }
     }
     #[cfg(not(target_os = "windows"))]
-    let _ = exe_name;
+    let _ = exe_names;
 }
 
 /// Ends every running program whose file is `exe_name`, like `taskkill /F /IM`, but
 /// through the Windows API: no console program is started, so no window opens or
 /// takes the focus. Returns how many were ended.
 pub fn terminate_by_name(exe_name: &str) -> Result<usize, String> {
+    terminate_by_names(&HashSet::from([exe_name.to_lowercase()]))
+}
+
+/// The same for several files (`exe_names` in lowercase), from one list of the
+/// running programs, so Stop all stays quick with thousands of games.
+pub fn terminate_by_names(exe_names: &HashSet<String>) -> Result<usize, String> {
     #[cfg(target_os = "windows")]
     unsafe {
         use windows_sys::Win32::Foundation::{CloseHandle, INVALID_HANDLE_VALUE};
@@ -291,7 +304,7 @@ pub fn terminate_by_name(exe_name: &str) -> Result<usize, String> {
         if Process32FirstW(snapshot, &mut entry) != 0 {
             loop {
                 let len = entry.szExeFile.iter().position(|&c| c == 0).unwrap_or(entry.szExeFile.len());
-                if String::from_utf16_lossy(&entry.szExeFile[..len]).eq_ignore_ascii_case(exe_name) {
+                if exe_names.contains(&String::from_utf16_lossy(&entry.szExeFile[..len]).to_lowercase()) {
                     pids.push(entry.th32ProcessID);
                 }
                 if Process32NextW(snapshot, &mut entry) == 0 {
@@ -315,7 +328,7 @@ pub fn terminate_by_name(exe_name: &str) -> Result<usize, String> {
     }
     #[cfg(not(target_os = "windows"))]
     {
-        let _ = exe_name;
+        let _ = exe_names;
         Ok(0)
     }
 }
@@ -435,5 +448,33 @@ mod tests {
         assert!(ended >= 1, "the game should have been ended");
         assert_eq!(status.code(), Some(1), "ended like taskkill /F, not as if closed from its window");
         assert_eq!(terminate_by_name("src-win.exe").unwrap(), 0, "nothing left to end");
+    }
+
+    /// Stop all ends games with different file names in one go (hidden game
+    /// windows, so no tray icons show): `cargo test --lib -- --ignored stop_all`
+    #[test]
+    #[ignore]
+    fn stop_all_ends_every_game_in_one_go() {
+        let runner = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../src-win/target/release/src-win.exe");
+        let dir = std::env::temp_dir().join(format!("questly-stop-all-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let names = ["questly-test-a.exe", "questly-test-b.exe", "questly-test-c.exe"];
+        let mut children: Vec<_> = names
+            .iter()
+            .map(|name| {
+                let exe = dir.join(name);
+                std::fs::copy(&runner, &exe).expect("copy of the game program");
+                std::process::Command::new(&exe).args(["--title", "Questly test", "--hidden"]).spawn().expect("runner")
+            })
+            .collect();
+        std::thread::sleep(std::time::Duration::from_millis(1500));
+        let set: HashSet<String> = names.iter().map(|n| n.to_string()).collect();
+        remove_runner_tray_icons_of(&set);
+        let ended = terminate_by_names(&set).unwrap();
+        let codes: Vec<_> = children.iter_mut().map(|c| c.wait().unwrap().code()).collect();
+        let _ = std::fs::remove_dir_all(&dir);
+        assert_eq!(ended, names.len(), "every game should have been ended");
+        assert!(codes.iter().all(|c| *c == Some(1)), "all ended like taskkill /F: {:?}", codes);
+        assert_eq!(terminate_by_names(&set).unwrap(), 0, "nothing left to end");
     }
 }
