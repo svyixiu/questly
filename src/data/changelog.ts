@@ -30,6 +30,17 @@ export const CHANGE_KINDS: { id: ChangeKind; label: string }[] = [
 
 export const CHANGELOG: Release[] = [
     {
+        version: '1.4.0',
+        date: '2026-09-30',
+        title: 'Updates from inside the app',
+        changes: [
+            { kind: 'new', text: 'Settings > About > Check for updates looks for a newer Questly on GitHub. If there is one, it shows what changed and asks before downloading anything.' },
+            { kind: 'new', text: 'The download shows its progress, size, speed and time left, and carries on if you close the dialog. When it is done, Questly restarts into the new version by itself: it installs over the old one and keeps your shortcuts, library and settings.' },
+            { kind: 'security', text: "Only files attached to Questly's own GitHub releases are downloaded, and one that doesn't match the checksum GitHub lists for it is thrown away before anything runs." },
+            { kind: 'improved', text: 'Finished downloads are cleaned up the next time Questly starts.' },
+        ],
+    },
+    {
         version: '1.3.1',
         date: '2026-09-30',
         title: 'Custom counts, and a pin that works',

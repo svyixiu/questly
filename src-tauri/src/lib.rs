@@ -16,6 +16,7 @@ mod brand;
 mod rpc;
 mod runner;
 mod system;
+mod update;
 
 // Global static instance of the Discord client
 static DISCORD_CLIENT: OnceCell<Mutex<Option<rpc::Client>>> = OnceCell::new();
@@ -417,6 +418,8 @@ struct InstallInfo {
     dev: bool,
     /// started from "Apps & features" → Uninstall
     uninstall_requested: bool,
+    /// started by an update: install over the installed copy and open it
+    update_requested: bool,
     /// started by Windows at sign-in (Launch on startup)
     autostarted: bool,
     version: String,
@@ -435,6 +438,7 @@ fn install_info(handle: AppHandle) -> InstallInfo {
         installed_exists: target.exists(),
         dev: cfg!(debug_assertions),
         uninstall_requested: env::args().any(|a| a == "--uninstall"),
+        update_requested: env::args().any(|a| a == "--update"),
         autostarted: env::args().any(|a| a == "--autostart"),
         version: handle.package_info().version.to_string(),
     }
@@ -1232,6 +1236,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
             setup_tray(app)?;
+            update::clean_old_downloads();
             start_discord_watcher(app.handle().clone());
             // The main window starts hidden (tauri.conf.json) and appears when
             // the splash is done. Started by Windows at sign-in ("Launch on
@@ -1283,6 +1288,10 @@ pub fn run() {
             create_fake_game,
             stop_process,
             stop_processes,
+            update::check_for_update,
+            update::download_update,
+            update::cancel_update_download,
+            update::install_update,
             connect_to_discord_rpc_3,
             run_background_process,
             fetch_gamelist_gh_mirror,

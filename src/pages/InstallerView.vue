@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useInstaller } from '@/composables/installer';
 import { recordAgreement, useSettings } from '@/composables/settings';
 import AnimatedCheckbox from '@/components/AnimatedCheckbox.vue';
@@ -43,6 +43,28 @@ async function launch() {
         launching.value = false;
     }
 }
+
+// Started by an update from an installed Questly: the notice and the Terms were
+// already agreed to there, so it installs right away (no new shortcuts: the
+// existing ones point at the same file) and opens the updated copy.
+const updating = computed(() => !!info.value?.update_requested);
+
+async function runUpdate() {
+    step.value = 'installing';
+    const [result] = await Promise.all([installer.install(false, false), new Promise(r => setTimeout(r, 700))]);
+    if (result.ok) await launch();
+    else {
+        error.value = result.error;
+        step.value = 'error';
+    }
+}
+
+function retry() {
+    if (updating.value) runUpdate();
+    else runInstall();
+}
+
+onMounted(() => { if (updating.value) runUpdate(); });
 
 const features = [
     ['Play without the game', 'Discord sees you playing any of 24,000+ detectable games.'],
@@ -134,9 +156,12 @@ const features = [
                     <div v-else-if="step === 'installing'" key="installing" class="h-full flex flex-col justify-center">
                         <div class="flex items-center gap-3 text-ink">
                             <span class="spinner !w-5 !h-5"></span>
-                            <h2 class="display text-[28px] leading-[30px]">Installing…</h2>
+                            <h2 class="display text-[28px] leading-[30px]">{{ updating ? `Updating to ${info?.version}…` : 'Installing…' }}</h2>
                         </div>
-                        <p class="text-[15px] text-muted mt-2">Copying Questly, adding shortcuts and registering it in Apps &amp; features.</p>
+                        <p class="text-[15px] text-muted mt-2">
+                            {{ updating ? 'Replacing the installed Questly, then opening it again. Your library and settings stay as they are.'
+                                : 'Copying Questly, adding shortcuts and registering it in Apps & features.' }}
+                        </p>
                     </div>
 
                     <!-- Done -->
@@ -176,7 +201,7 @@ const features = [
                 </template>
                 <template v-else-if="step === 'error'">
                     <button class="btn btn-glass" @click="step = 'welcome'">Back</button>
-                    <button class="btn btn-primary ml-auto" @click="runInstall">Try again</button>
+                    <button class="btn btn-primary ml-auto" @click="retry">Try again</button>
                 </template>
             </div>
         </section>

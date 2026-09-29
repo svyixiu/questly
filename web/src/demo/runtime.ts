@@ -36,6 +36,10 @@ const SEED = [
 ]
 
 const scene = new URLSearchParams(location.search).get('scene')
+// ?update=demo pretends a newer version is out (screenshots, and trying the update dialog)
+const fakeUpdate = new URLSearchParams(location.search).get('update') === 'demo'
+// ?update=apply shows what the downloaded version does: install itself and reopen
+const applyUpdate = new URLSearchParams(location.search).get('update') === 'apply'
 
 if (!store.get(KEYS.seeded) || scene) {
     store.set(KEYS.seeded, '1')
@@ -54,6 +58,7 @@ if (!store.get(KEYS.seeded) || scene) {
 // ----- simulated PC -----
 const sim: Sim = { discord: true, heavy: false, away: false }
 let awaySince = 0
+let fakeDownloadCancelled = false
 let lastInput = Date.now()
 for (const type of ['pointerdown', 'pointermove', 'keydown', 'wheel']) {
     window.addEventListener(type, () => { lastInput = Date.now() }, { capture: true, passive: true })
@@ -197,13 +202,55 @@ async function handle(cmd: string, args: Args): Promise<unknown> {
                 install_dir: 'C:\\Users\\you\\AppData\\Local\\Programs\\Questly',
                 installed_exe: 'C:\\Users\\you\\AppData\\Local\\Programs\\Questly\\Questly.exe',
                 data_dir: 'C:\\Users\\you\\AppData\\Roaming\\Questly',
-                running_installed: true,
+                running_installed: !applyUpdate,
                 installed_exists: false,
                 dev: false,
                 uninstall_requested: false,
+                update_requested: applyUpdate,
                 autostarted: false,
                 version: __APP_VERSION__,
             }
+
+        // --- updates: the demo is the newest version (unless ?update=demo) ---
+        case 'check_for_update': {
+            await new Promise(r => setTimeout(r, 400))
+            const [major, minor] = __APP_VERSION__.split('.').map(Number)
+            return fakeUpdate
+                ? {
+                    current: __APP_VERSION__, latest: `${major}.${minor + 1}.0`, available: true, size: 18_835_968,
+                    notes: '**New**\n- A sample change, to show how an update looks.\n- Another one.\n\n**Fixed**\n- A sample fix.',
+                    published_at: new Date().toISOString(), page: 'https://github.com/svyixiu/questly/releases/latest',
+                }
+                : {
+                    current: __APP_VERSION__, latest: __APP_VERSION__, available: false, notes: '',
+                    published_at: '', size: 0, page: 'https://github.com/svyixiu/questly/releases/latest',
+                }
+        }
+        case 'download_update': {
+            if (!fakeUpdate) throw new Error('Updates are only downloaded in the desktop app.')
+            fakeDownloadCancelled = false
+            const total = 18_835_968
+            for (let done = 0; done < total;) {
+                if (fakeDownloadCancelled) throw new Error('cancelled')
+                await new Promise(r => setTimeout(r, 100))
+                done = Math.min(total, done + 620_000)
+                emit('update_progress', { downloaded: done, total })
+            }
+            return null
+        }
+        case 'cancel_update_download':
+            fakeDownloadCancelled = true
+            return null
+        case 'install_app':
+            await new Promise(r => setTimeout(r, 600))
+            return 'C:\\Users\\you\\AppData\\Local\\Programs\\Questly\\Questly.exe'
+        case 'launch_installed':
+            if (applyUpdate) toast('success', 'Updated', 'In the desktop app, the updated Questly would open now.')
+            return null
+        case 'install_update':
+            if (!fakeUpdate) throw new Error('Updates are only downloaded in the desktop app.')
+            toast('info', 'Update ready', 'In the desktop app, Questly would now restart into the new version.')
+            return null
 
         // --- library.json (kept in this browser) ---
         case 'read_library_file': {

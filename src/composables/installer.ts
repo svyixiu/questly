@@ -12,6 +12,8 @@ export interface InstallInfo {
     installed_exists: boolean;
     dev: boolean;
     uninstall_requested: boolean;
+    /** started by an update (Settings → Check for updates): install over the old copy and open it */
+    update_requested: boolean;
     /** started by Windows at sign-in (Launch on startup) */
     autostarted: boolean;
     version: string;
