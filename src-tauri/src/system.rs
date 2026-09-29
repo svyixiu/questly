@@ -193,6 +193,82 @@ pub fn close_discord(id: String) -> Result<(), String> {
     }
 }
 
+// ----- game window tray icons -----
+// A game window adds a tray icon and removes it when it closes. A game that is
+// force-stopped can't, and Windows then keeps showing its icon until the mouse
+// passes over it; once the process is gone nothing can remove it any more. So
+// Questly takes a game's icon down itself, while its window still exists, right
+// before stopping it.
+
+/// Every game window (class "DQCTray") with the id of its process.
+#[cfg(target_os = "windows")]
+fn runner_windows() -> Vec<(windows_sys::Win32::Foundation::HWND, u32)> {
+    use windows_sys::Win32::UI::WindowsAndMessaging::{FindWindowExW, GetWindowThreadProcessId};
+
+    let class: Vec<u16> = "DQCTray\0".encode_utf16().collect();
+    let mut found = Vec::new();
+    let mut hwnd = std::ptr::null_mut();
+    loop {
+        hwnd = unsafe { FindWindowExW(std::ptr::null_mut(), hwnd, class.as_ptr(), std::ptr::null()) };
+        if hwnd.is_null() {
+            break;
+        }
+        let mut pid = 0u32;
+        unsafe { GetWindowThreadProcessId(hwnd, &mut pid) };
+        if pid != 0 {
+            found.push((hwnd, pid));
+        }
+    }
+    found
+}
+
+#[cfg(target_os = "windows")]
+fn remove_runner_tray_icon(hwnd: windows_sys::Win32::Foundation::HWND) {
+    use windows_sys::Win32::UI::Shell::{Shell_NotifyIconW, NIM_DELETE, NOTIFYICONDATAW};
+
+    let mut nid: NOTIFYICONDATAW = unsafe { std::mem::zeroed() };
+    nid.cbSize = std::mem::size_of::<NOTIFYICONDATAW>() as u32;
+    nid.hWnd = hwnd;
+    nid.uID = 1; // a game window's only icon (src-win/src/main.cpp)
+    // fails harmlessly when the icon is already hidden (Auto hide, --hidden)
+    unsafe { Shell_NotifyIconW(NIM_DELETE, &nid) };
+}
+
+/// The file name of a running process's program ("VALORANT.exe").
+#[cfg(target_os = "windows")]
+fn process_file_name(pid: u32) -> Option<String> {
+    use windows_sys::Win32::Foundation::CloseHandle;
+    use windows_sys::Win32::System::Threading::{OpenProcess, QueryFullProcessImageNameW, PROCESS_QUERY_LIMITED_INFORMATION};
+
+    unsafe {
+        let handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, 0, pid);
+        if handle.is_null() {
+            return None;
+        }
+        let mut buf = [0u16; 1024];
+        let mut len = buf.len() as u32;
+        let ok = QueryFullProcessImageNameW(handle, 0, buf.as_mut_ptr(), &mut len);
+        CloseHandle(handle);
+        if ok == 0 {
+            return None;
+        }
+        let path = String::from_utf16_lossy(&buf[..len as usize]);
+        std::path::Path::new(&path).file_name().map(|f| f.to_string_lossy().to_string())
+    }
+}
+
+/// Takes down the tray icons of the game windows running as `exe_name`, before they're stopped.
+pub fn remove_runner_tray_icons(exe_name: &str) {
+    #[cfg(target_os = "windows")]
+    for (hwnd, pid) in runner_windows() {
+        if process_file_name(pid).is_some_and(|name| name.eq_ignore_ascii_case(exe_name)) {
+            remove_runner_tray_icon(hwnd);
+        }
+    }
+    #[cfg(not(target_os = "windows"))]
+    let _ = exe_name;
+}
+
 // ----- Panic Abort: end every game window, tracked or not -----
 
 #[tauri::command]
@@ -201,19 +277,11 @@ pub fn kill_all_runners() -> usize {
     {
         use windows_sys::Win32::Foundation::CloseHandle;
         use windows_sys::Win32::System::Threading::{OpenProcess, TerminateProcess, PROCESS_TERMINATE};
-        use windows_sys::Win32::UI::WindowsAndMessaging::{FindWindowExW, GetWindowThreadProcessId};
 
-        let class: Vec<u16> = "DQCTray\0".encode_utf16().collect();
         let mut pids: Vec<u32> = Vec::new();
-        let mut hwnd = std::ptr::null_mut();
-        loop {
-            hwnd = unsafe { FindWindowExW(std::ptr::null_mut(), hwnd, class.as_ptr(), std::ptr::null()) };
-            if hwnd.is_null() {
-                break;
-            }
-            let mut pid = 0u32;
-            unsafe { GetWindowThreadProcessId(hwnd, &mut pid) };
-            if pid != 0 && !pids.contains(&pid) {
+        for (hwnd, pid) in runner_windows() {
+            remove_runner_tray_icon(hwnd);
+            if !pids.contains(&pid) {
                 pids.push(pid);
             }
         }
@@ -267,5 +335,38 @@ pub fn set_autostart(enabled: bool) -> Result<(), String> {
     {
         let _ = enabled;
         Err("Launch on startup is only available on Windows".into())
+    }
+}
+
+#[cfg(all(test, target_os = "windows"))]
+mod tests {
+    use super::*;
+
+    /// Starts the real game program (build it first: `pnpm build:runner:win`), takes
+    /// its tray icon down the way Stop does, and checks Windows no longer has it.
+    /// Shows a tray icon for a moment, so it only runs when asked:
+    /// `cargo test --lib -- --ignored tray_icon`
+    #[test]
+    #[ignore]
+    fn tray_icon_is_removed_before_a_game_is_stopped() {
+        use windows_sys::Win32::UI::Shell::{Shell_NotifyIconGetRect, NOTIFYICONIDENTIFIER};
+
+        let exe = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../src-win/target/release/src-win.exe");
+        let mut child = std::process::Command::new(&exe).args(["--title", "Questly test"]).spawn().expect("runner");
+        std::thread::sleep(std::time::Duration::from_millis(1500));
+        let hwnd = runner_windows().into_iter().find(|(_, pid)| *pid == child.id()).expect("game window").0;
+        let has_icon = || unsafe {
+            let mut id: NOTIFYICONIDENTIFIER = std::mem::zeroed();
+            id.cbSize = std::mem::size_of::<NOTIFYICONIDENTIFIER>() as u32;
+            id.hWnd = hwnd;
+            id.uID = 1;
+            let mut rect = std::mem::zeroed();
+            Shell_NotifyIconGetRect(&id, &mut rect) == 0
+        };
+        assert!(has_icon(), "the game window should show a tray icon");
+        remove_runner_tray_icons("SRC-WIN.EXE");
+        let removed = !has_icon();
+        let _ = child.kill();
+        assert!(removed, "the tray icon should be gone before the game is stopped");
     }
 }

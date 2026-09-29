@@ -35,6 +35,15 @@ fn show_main_window(app: &AppHandle) {
     }
 }
 
+/// Quits. The tray icon is taken down first, so it can't be left behind in the
+/// notification area.
+fn exit_app(app: &AppHandle) {
+    if let Some(tray) = app.tray_by_id("main") {
+        let _ = tray.set_visible(false);
+    }
+    app.exit(0);
+}
+
 fn toggle_main_window(app: &AppHandle) {
     if let Some(window) = app.get_webview_window("main") {
         if window.is_visible().unwrap_or(false) {
@@ -74,7 +83,7 @@ fn setup_tray(app: &tauri::App) -> tauri::Result<()> {
             "show_games" => {
                 post_to_runner_windows(true);
             }
-            "quit" => app.exit(0),
+            "quit" => exit_app(app),
             _ => {}
         })
         .on_tray_icon_event(|tray, event| {
@@ -110,7 +119,7 @@ fn show_window(handle: AppHandle) {
 /// Really quits, even when "Close to tray" is on (used by the risk notice's Quit).
 #[tauri::command]
 fn quit_app(handle: AppHandle) {
-    handle.exit(0);
+    exit_app(&handle);
 }
 
 #[tauri::command]
@@ -431,7 +440,7 @@ fn launch_installed(handle: AppHandle) -> Result<(), String> {
         .current_dir(install_dir())
         .spawn()
         .map_err(|e| format!("Couldn't start {}: {}", target.display(), e))?;
-    handle.exit(0);
+    exit_app(&handle);
     Ok(())
 }
 
@@ -440,6 +449,8 @@ fn launch_installed(handle: AppHandle) -> Result<(), String> {
 /// dummy games and saved settings.
 #[tauri::command]
 fn uninstall_app(handle: AppHandle, remove_data: bool) -> Result<(), String> {
+    // running games go too: their files are about to be deleted, and their tray icons with them
+    system::kill_all_runners();
     #[cfg(target_os = "windows")]
     {
         let script = r#"
@@ -477,7 +488,7 @@ Remove-Item -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\Que
             let _ = fs::remove_dir_all(app_local_dir());
         }
     }
-    handle.exit(0);
+    exit_app(&handle);
     Ok(())
 }
 
@@ -973,6 +984,8 @@ async fn stop_process(exec_name: String) -> Result<(), String> {
 
     #[cfg(target_os = "windows")]
     {
+        // a force-stopped game can't take its own tray icon down
+        system::remove_runner_tray_icons(&process_name);
         let output = std::process::Command::new("taskkill")
             .arg("/F")
             .arg("/IM")

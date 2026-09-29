@@ -30,6 +30,16 @@ export const CHANGE_KINDS: { id: ChangeKind; label: string }[] = [
 
 export const CHANGELOG: Release[] = [
     {
+        version: '1.1.1',
+        date: '2026-09-29',
+        title: 'No more leftover tray icons',
+        changes: [
+            { kind: 'fixed', text: "Stopping a game, Panic Abort and uninstalling no longer leave the game's icon behind in the notification area." },
+            { kind: 'fixed', text: 'Uninstalling Questly also closes games that are still running, so their files can be deleted and their icons go away.' },
+            { kind: 'improved', text: "Quitting always takes Questly's own tray icon down first." },
+        ],
+    },
+    {
         version: '1.1.0',
         date: '2026-09-29',
         title: 'Terms, About and this changelog',
