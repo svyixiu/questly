@@ -28,6 +28,7 @@ const justAdded = ref(new Set<string>());
 
 watch(() => props.open, open => {
     if (open) nextTick(() => { inputRef.value?.focus(); inputRef.value?.select(); });
+    else lastRandom.value = null;
 });
 
 // The fuzzy search over ~25k games runs in a background worker, so typing
@@ -100,6 +101,61 @@ function resolveNoExe(proceed: boolean) {
     nextTick(() => inputRef.value?.focus());
 }
 
+// ----- random games -----
+// With the search empty, from every game; otherwise from every game the search
+// matches (not just the few shown). Only new games that can be launched count,
+// since the others couldn't do anything for a quest.
+const RANDOM_COUNTS = [1, 5, 10, 50, 100] as const;
+const randomBusy = ref(false);
+/** the last random add: its summary, and what Undo removes */
+const lastRandom = ref<{ uids: string[]; names: string[]; asked: number; query: string } | null>(null);
+
+function pickRandom<T>(pool: T[], count: number): T[] {
+    const copy = pool.slice();
+    const n = Math.min(count, copy.length);
+    for (let i = 0; i < n; i++) {
+        const j = i + Math.floor(Math.random() * (copy.length - i));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+    }
+    return copy.slice(0, n);
+}
+
+async function addRandom(count: number) {
+    if (randomBusy.value || gameDB.value.length === 0) return;
+    randomBusy.value = true;
+    const q = query.value.trim();
+    try {
+        const matches = await gameSearch.searchAll(q);
+        const pool = matches.filter(g => !library.addedIds.value.has(g.id) && validExecutables(g).length > 0);
+        const added = library.addGames(pickRandom(pool, count));
+        lastRandom.value = { uids: added.map(g => g.uid!), names: added.map(g => g.name), asked: count, query: q };
+    } finally {
+        randomBusy.value = false;
+    }
+}
+
+async function undoRandom() {
+    const last = lastRandom.value;
+    lastRandom.value = null;
+    if (last?.uids.length) await library.removeGames(last.uids);
+    nextTick(() => inputRef.value?.focus());
+}
+
+const plural = (n: number) => `${n} random game${n === 1 ? '' : 's'}`;
+const randomSummary = computed(() => {
+    const last = lastRandom.value;
+    if (!last) return '';
+    const n = last.uids.length;
+    const where = last.query ? ` matching “${last.query}”` : '';
+    if (n === 0) return last.query ? `No new games match “${last.query}” that can be launched.` : 'There are no new games left to add.';
+    if (n < last.asked) return `Added ${plural(n)}${where}: that's every new one.`;
+    return `Added ${plural(n)}${where}.`;
+});
+const randomNames = computed(() => {
+    const names = lastRandom.value?.names ?? [];
+    return names.length > 4 ? `${names.slice(0, 4).join(', ')} and ${names.length - 4} more` : names.join(', ');
+});
+
 function move(delta: number) {
     const n = visibleResults.value.length;
     if (n === 0) return;
@@ -111,6 +167,13 @@ function move(delta: number) {
 }
 
 function onKeydown(e: KeyboardEvent) {
+    // Alt+1 to Alt+5: add 1, 5, 10, 50 or 100 random games
+    const randomIndex = e.altKey && !e.ctrlKey && !e.metaKey ? ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5'].indexOf(e.code) : -1;
+    if (randomIndex >= 0) {
+        e.preventDefault();
+        addRandom(RANDOM_COUNTS[randomIndex]);
+        return;
+    }
     if (e.key === 'ArrowDown') { e.preventDefault(); move(1); }
     else if (e.key === 'ArrowUp') { e.preventDefault(); move(-1); }
     else if (e.key === 'Enter') {
@@ -136,9 +199,37 @@ const examples = ['VALORANT', 'Genshin Impact', 'Minecraft', 'Fortnite', 'Rocket
             <span class="kbd">esc</span>
         </div>
 
+        <!-- random games: from everything, or from what the search matches -->
+        <div class="flex items-center gap-3 px-5 h-12 border-b border-line">
+            <svg viewBox="0 0 24 24" class="w-[18px] h-[18px] text-muted shrink-0" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="4.5" />
+                <circle cx="8.5" cy="8.5" r="1.4" fill="currentColor" stroke="none" /><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none" />
+                <circle cx="15.5" cy="15.5" r="1.4" fill="currentColor" stroke="none" /></svg>
+            <span class="text-sm font-semibold text-ink-2 shrink-0">Add random</span>
+            <div class="seg !p-[2px] shrink-0" role="group" aria-label="Add random games">
+                <button v-for="(n, i) in RANDOM_COUNTS" :key="n" class="!h-7 !px-3 tabular-nums disabled:opacity-40"
+                    :disabled="randomBusy || gameDB.length === 0" :data-tip="`Add ${n} random game${n === 1 ? '' : 's'} (Alt+${i + 1})`"
+                    @click="addRandom(n)">{{ n }}</button>
+            </div>
+            <span v-if="randomBusy" class="spinner !w-3.5 !h-3.5 text-muted"></span>
+            <span class="ml-auto text-xs text-muted truncate">
+                {{ query.trim() ? `from games matching “${query.trim()}”` : 'from every game' }}
+            </span>
+        </div>
+
         <div ref="listRef" v-smooth class="relative max-h-[22rem] overflow-y-auto p-2">
+            <Transition name="rise">
+                <div v-if="lastRandom" class="random-note flex items-center gap-3 rounded-xl px-3 py-2.5 mb-1.5">
+                    <div class="min-w-0 flex-1">
+                        <div class="text-sm font-semibold text-ink">{{ randomSummary }}</div>
+                        <div v-if="randomNames" class="text-xs text-muted truncate">{{ randomNames }}</div>
+                    </div>
+                    <button v-if="lastRandom.uids.length" class="btn btn-glass btn-sm !h-8 shrink-0" @click="undoRandom">Undo</button>
+                </div>
+            </Transition>
+
             <div v-if="!query" class="px-3 py-3 text-sm text-muted">
-                Search Discord's list of detectable games. Games already in your library are hidden.
+                Search Discord's list of detectable games, or add random ones above. Games already in your library are hidden.
             </div>
 
             <div v-else-if="gameDB.length === 0 && !allFetchDone" class="px-3 py-3 flex items-center gap-2 text-sm text-muted">
@@ -191,6 +282,7 @@ const examples = ['VALORANT', 'Genshin Impact', 'Minecraft', 'Fortnite', 'Rocket
             <span><span class="kbd">↑</span> <span class="kbd">↓</span> navigate</span>
             <span><span class="kbd">↵</span> add</span>
             <span><span class="kbd">Ctrl</span> <span class="kbd">↵</span> add &amp; play</span>
+            <span><span class="kbd">Alt</span> <span class="kbd">1-5</span> random</span>
             <span v-if="hiddenAddedCount > 0" class="ml-auto">{{ hiddenAddedCount }} already added</span>
         </div>
     </BaseModal>
@@ -241,6 +333,11 @@ const examples = ['VALORANT', 'Genshin Impact', 'Minecraft', 'Fortnite', 'Rocket
 
 .result.is-added {
     background: var(--ok-soft);
+}
+
+.random-note {
+    background: var(--ok-soft);
+    border: 1px solid color-mix(in srgb, var(--ok) 35%, transparent);
 }
 
 .added-check path {

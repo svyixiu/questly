@@ -322,6 +322,19 @@ export const useGameLibrary = createGlobalState(() => {
         return added
     }
 
+    /** Adds several games at once (one save, one log line). Returns the library copies of the new ones. */
+    function addGames(list: Game[]): Game[] {
+        const known = addedIds.value
+        const fresh = list.filter((g, i) => !known.has(g.id) && list.findIndex(o => o.id === g.id) === i)
+        if (fresh.length === 0) return []
+        games.value.push(...fresh.map(toLibraryGame))
+        const added = games.value.slice(-fresh.length)
+        focusedUid.value = added[0].uid!
+        const names = fresh.slice(0, 5).map(g => g.name).join(', ')
+        addLog('info', `Added ${fresh.length} game${fresh.length === 1 ? '' : 's'}: ${names}${fresh.length > 5 ? ` and ${fresh.length - 5} more` : ''}`)
+        return added
+    }
+
     async function removeGames(uids: string[]) {
         const toRemove = games.value.filter(g => uids.includes(g.uid!))
         for (const game of toRemove) {
@@ -579,6 +592,7 @@ export const useGameLibrary = createGlobalState(() => {
         importEntries,
         findByUid,
         addGame,
+        addGames,
         removeGame,
         removeGames,
         setSelectedExe,

@@ -12,6 +12,7 @@ const groups: { title: string; items: { keys: string[][]; label: string }[] }[] 
             { keys: [['↑'], ['↓']], label: 'Move through results' },
             { keys: [['Enter']], label: 'Add game (Spotlight stays open)' },
             { keys: [['Ctrl', 'Enter']], label: 'Add game and start playing' },
+            { keys: [['Alt', '1…5']], label: 'Add 1, 5, 10, 50 or 100 random games (from what you searched)' },
             { keys: [['Esc']], label: 'Close Spotlight' },
         ],
     },

@@ -3,6 +3,7 @@ import { computed, ref, toRaw, watch } from 'vue'
 import Fuse from 'fuse.js'
 import type { Game } from '@/types/types'
 import type { SearchEntry, SearchRequest, SearchResponse } from '@/workers/game-search.worker'
+import { CLOSE_MATCH_SCORE, keywords, matchesKeywords } from '@/utils/keyword-match'
 import { useGameDB } from './game-db'
 
 /**
@@ -29,35 +30,65 @@ export const useGameSearch = createGlobalState(() => {
     let inFlight: { seq: number; resolve: (games: Game[]) => void } | null = null
     /** a search made before the index was ready */
     let queued: (() => void) | null = null
+    /** searchAll() requests: each gets its answer, whatever is being typed meanwhile */
+    const allPending = new Map<number, (games: Game[]) => void>()
+    /** searchAll() requests made before the index was ready */
+    let waiting: (() => void)[] = []
 
     function settle(games: Game[]) {
         inFlight?.resolve(games)
         inFlight = null
     }
 
+    function whenReady() {
+        ready.value = true
+        queued?.()
+        queued = null
+        waiting.forEach(run => run())
+        waiting = []
+    }
+
     if (worker) {
         worker.onmessage = ({ data }: MessageEvent<SearchResponse>) => {
             if (data.type === 'ready') {
-                ready.value = true
-                queued?.()
-                queued = null
-            } else if (inFlight && data.seq === inFlight.seq) {
-                settle(data.ids.map(i => byId.value.get(i)).filter((g): g is Game => !!g))
+                whenReady()
+                return
+            }
+            const games = () => data.ids.map(i => byId.value.get(i)).filter((g): g is Game => !!g)
+            if (inFlight && data.seq === inFlight.seq) {
+                settle(games())
+            } else if (allPending.has(data.seq)) {
+                const resolve = allPending.get(data.seq)!
+                allPending.delete(data.seq)
+                resolve(games())
             }
         }
-        worker.onerror = () => { worker = null; ready.value = true; queued?.(); queued = null }
+        worker.onerror = () => { worker = null; whenReady() }
     }
 
     const send = (message: SearchRequest) => worker?.postMessage(message)
 
     // no worker (shouldn't happen in the app): search on this thread instead
     let fallback: Fuse<Game> | null = null
-    function searchHere(q: string, limit: number) {
+    function fallbackIndex() {
         fallback ??= new Fuse(gameDB.value, {
             keys: [{ name: 'name', weight: 0.7 }, { name: 'aliases', weight: 0.2 }, { name: 'executables.name', weight: 0.1 }],
+            includeScore: true,
             threshold: 0.5,
         })
-        return fallback.search(q, { limit }).map(r => r.item)
+        return fallback
+    }
+
+    function searchHere(q: string, limit: number) {
+        return fallbackIndex().search(q, { limit }).map(r => r.item)
+    }
+
+    /** matchAll on this thread (same rules as the worker) */
+    function matchAllHere(q: string) {
+        const words = keywords(q)
+        const found = gameDB.value.filter(g => matchesKeywords(String(g.name), (g.aliases ?? []).map(String), words))
+        if (found.length > 0) return found
+        return fallbackIndex().search(q).filter(r => (r.score ?? 1) <= CLOSE_MATCH_SCORE).map(r => r.item)
     }
 
     // hand the list over when the app is idle, so it never competes with the UI
@@ -108,5 +139,28 @@ export const useGameSearch = createGlobalState(() => {
         })
     }
 
-    return { search, ready }
+    /**
+     * Every game the search contains (the whole list when it's empty), for a
+     * random pick: each word typed appears in the name or another name, or, if
+     * no game has them, the close fuzzy matches (utils/keyword-match.ts).
+     * Doesn't disturb the search being typed.
+     */
+    function searchAll(query: string): Promise<Game[]> {
+        const q = query.trim()
+        if (!q) return Promise.resolve(gameDB.value)
+        if (!worker) return Promise.resolve(matchAllHere(q))
+        const id = ++seq
+        return new Promise(resolve => {
+            allPending.set(id, resolve)
+            const run = () => {
+                if (worker) return send({ type: 'matchAll', seq: id, query: q })
+                allPending.delete(id)
+                resolve(matchAllHere(q))
+            }
+            if (ready.value) run()
+            else waiting.push(run)
+        })
+    }
+
+    return { search, searchAll, ready }
 })

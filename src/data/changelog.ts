@@ -30,6 +30,16 @@ export const CHANGE_KINDS: { id: ChangeKind; label: string }[] = [
 
 export const CHANGELOG: Release[] = [
     {
+        version: '1.2.0',
+        date: '2026-09-29',
+        title: 'Random games',
+        changes: [
+            { kind: 'new', text: 'Spotlight can add 1, 5, 10, 50 or 100 random games at once (Alt+1 to Alt+5). With the search empty they come from every game; with a search, from the games whose name has every word you typed.' },
+            { kind: 'new', text: 'Undo takes a random batch back out, in case 100 was a few too many.' },
+            { kind: 'improved', text: "Random picks skip games already in your library and games that can't be launched, since those can't count toward a quest." },
+        ],
+    },
+    {
         version: '1.1.1',
         date: '2026-09-29',
         title: 'No more leftover tray icons',
