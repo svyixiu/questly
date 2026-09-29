@@ -647,6 +647,22 @@
         }
     }
 
+    /* placeholder shape while something is on its way, with a soft sweep */
+    .skeleton {
+        background: linear-gradient(90deg, var(--glass-2) 30%, var(--glass-3) 50%, var(--glass-2) 70%);
+        background-size: 300% 100%;
+        animation: skeleton-sweep 1.4s ease-in-out infinite;
+    }
+
+    @keyframes skeleton-sweep {
+        from {
+            background-position: 100% 0;
+        }
+        to {
+            background-position: 0 0;
+        }
+    }
+
     /* segmented control: outlined pill with a solid active pill */
     .seg {
         display: flex;

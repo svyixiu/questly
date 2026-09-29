@@ -30,6 +30,16 @@ export const CHANGE_KINDS: { id: ChangeKind; label: string }[] = [
 
 export const CHANGELOG: Release[] = [
     {
+        version: '1.2.1',
+        date: '2026-09-29',
+        title: 'Big libraries stay fast',
+        changes: [
+            { kind: 'performance', text: 'The library draws 100 games at a time. Scrolling near the end brings in the next 100, a few rows per frame, so hundreds of games open and scroll smoothly.' },
+            { kind: 'design', text: 'Skeleton rows show where the next games are coming in.' },
+            { kind: 'improved', text: 'Moving the focus with the keyboard, or adding games, draws the rows needed to show them right away.' },
+        ],
+    },
+    {
         version: '1.2.0',
         date: '2026-09-29',
         title: 'Random games',

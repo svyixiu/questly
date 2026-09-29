@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, useTemplateRef } from 'vue';
-import { useEventListener } from '@vueuse/core';
+import { computed, nextTick, ref, useTemplateRef, watch } from 'vue';
+import { useEventListener, useIntersectionObserver } from '@vueuse/core';
 import type { Game } from '@/types/types';
 import { Pages, useGlobalState } from '@/composables/app-state';
 import { useGameLibrary } from '@/composables/game-library';
@@ -31,6 +31,46 @@ const shortcutsOpen = ref(false);
 const timerOpen = ref(false);
 
 const someChecked = computed(() => checked.value.size > 0);
+
+// ----- drawing a big library in chunks -----
+// A library of hundreds of games is drawn 100 at a time. Scrolling near the end
+// brings in the next 100, a few rows per frame so scrolling stays smooth, with
+// skeleton rows showing where they're coming. Everything else (checking all,
+// launching, timers) still works on the whole library.
+const CHUNK = 100;
+const ROWS_PER_FRAME = 25;
+const shown = ref(CHUNK);
+const loadingMore = ref(false);
+const shownGames = computed(() => games.value.slice(0, shown.value));
+const remaining = computed(() => Math.max(0, games.value.length - shown.value));
+const skeletonRows = computed(() => Math.min(remaining.value, 6));
+
+function loadMore() {
+    if (loadingMore.value || remaining.value === 0) return;
+    loadingMore.value = true;
+    const goal = Math.min(shown.value + CHUNK, games.value.length);
+    const step = () => {
+        shown.value = Math.min(goal, shown.value + ROWS_PER_FRAME);
+        if (shown.value < goal) requestAnimationFrame(step);
+        else loadingMore.value = false;
+    };
+    // let the skeleton rows paint first
+    requestAnimationFrame(() => requestAnimationFrame(step));
+}
+
+// the skeleton rows at the end: in view (or nearly) means "draw the next chunk"
+const moreRef = useTemplateRef<HTMLElement>('moreRef');
+const nearEnd = ref(false);
+useIntersectionObserver(moreRef, ([entry]) => { nearEnd.value = !!entry?.isIntersecting; },
+    { root: listRef, rootMargin: '0px 0px 480px 0px' });
+// keeps going while the end stays in view (a tall window, or a fast scroll)
+watch([nearEnd, loadingMore], ([near, busy]) => { if (near && !busy) loadMore(); });
+
+// a game further down (keyboard focus, just added) is drawn right away so it can be shown
+watch(focusedUid, uid => {
+    const index = games.value.findIndex(g => g.uid === uid);
+    if (index >= shown.value) shown.value = Math.min(games.value.length, Math.ceil((index + 1) / CHUNK) * CHUNK);
+});
 
 const launchTargets = computed(() => someChecked.value ? checkedGames.value : games.value);
 const launchLabel = computed(() => someChecked.value ? `Launch ${checked.value.size}` : 'Launch all');
@@ -171,10 +211,22 @@ const searchExamples = ['VALORANT', 'Genshin Impact', 'Fortnite', 'Minecraft', '
 
             <div ref="listRef" v-smooth class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden px-2.5 pt-2 pb-2">
                 <TransitionGroup name="list" tag="div" class="relative flex flex-col gap-1">
-                    <LibraryRow v-for="(game, index) in games" :key="game.uid" :game="game"
+                    <LibraryRow v-for="(game, index) in shownGames" :key="game.uid" :game="game"
                         :focused="focusedUid === game.uid" :some-checked="someChecked"
                         @focus="focusedUid = game.uid!" @check="onCheck(game, index, $event)" />
                 </TransitionGroup>
+
+                <!-- where the next chunk of a big library comes in -->
+                <div v-if="remaining > 0" ref="moreRef" class="flex flex-col gap-1 mt-1" aria-hidden="true">
+                    <div v-for="i in skeletonRows" :key="i" class="flex items-center gap-3 h-14 px-2.5"
+                        :style="{ opacity: 1 - (i - 1) * 0.14 }">
+                        <span class="skeleton w-[38px] h-[38px] rounded-[10px] shrink-0"></span>
+                        <span class="flex-1 min-w-0 flex flex-col gap-2">
+                            <span class="skeleton h-3 rounded-full" :style="{ width: `${62 - ((i * 17) % 28)}%` }"></span>
+                            <span class="skeleton h-2.5 rounded-full" :style="{ width: `${40 - ((i * 11) % 18)}%` }"></span>
+                        </span>
+                    </div>
+                </div>
 
                 <div v-if="games.length === 0" class="px-3 pt-6 text-center">
                     <div class="text-sm font-semibold text-ink-2">Your library is empty.</div>
