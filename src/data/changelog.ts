@@ -30,6 +30,15 @@ export const CHANGE_KINDS: { id: ChangeKind; label: string }[] = [
 
 export const CHANGELOG: Release[] = [
     {
+        version: '1.2.2',
+        date: '2026-09-29',
+        title: 'No more console windows',
+        changes: [
+            { kind: 'fixed', text: "Stopping a game no longer flashes a console window that takes the focus from what you're doing. Questly now ends games itself instead of starting taskkill." },
+            { kind: 'performance', text: 'Stopping games is quicker, since no helper program has to start first.' },
+        ],
+    },
+    {
         version: '1.2.1',
         date: '2026-09-29',
         title: 'Big libraries stay fast',

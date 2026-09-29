@@ -269,6 +269,57 @@ pub fn remove_runner_tray_icons(exe_name: &str) {
     let _ = exe_name;
 }
 
+/// Ends every running program whose file is `exe_name`, like `taskkill /F /IM`, but
+/// through the Windows API: no console program is started, so no window opens or
+/// takes the focus. Returns how many were ended.
+pub fn terminate_by_name(exe_name: &str) -> Result<usize, String> {
+    #[cfg(target_os = "windows")]
+    unsafe {
+        use windows_sys::Win32::Foundation::{CloseHandle, INVALID_HANDLE_VALUE};
+        use windows_sys::Win32::System::Diagnostics::ToolHelp::{
+            CreateToolhelp32Snapshot, Process32FirstW, Process32NextW, PROCESSENTRY32W, TH32CS_SNAPPROCESS,
+        };
+        use windows_sys::Win32::System::Threading::{OpenProcess, TerminateProcess, PROCESS_TERMINATE};
+
+        let snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+        if snapshot == INVALID_HANDLE_VALUE {
+            return Err("Couldn't list the running programs.".into());
+        }
+        let mut entry: PROCESSENTRY32W = std::mem::zeroed();
+        entry.dwSize = std::mem::size_of::<PROCESSENTRY32W>() as u32;
+        let mut pids = Vec::new();
+        if Process32FirstW(snapshot, &mut entry) != 0 {
+            loop {
+                let len = entry.szExeFile.iter().position(|&c| c == 0).unwrap_or(entry.szExeFile.len());
+                if String::from_utf16_lossy(&entry.szExeFile[..len]).eq_ignore_ascii_case(exe_name) {
+                    pids.push(entry.th32ProcessID);
+                }
+                if Process32NextW(snapshot, &mut entry) == 0 {
+                    break;
+                }
+            }
+        }
+        CloseHandle(snapshot);
+        let mut ended = 0;
+        for pid in pids {
+            let handle = OpenProcess(PROCESS_TERMINATE, 0, pid);
+            if !handle.is_null() {
+                // exit code 1, as taskkill /F: Questly doesn't mistake it for "closed from its window"
+                if TerminateProcess(handle, 1) != 0 {
+                    ended += 1;
+                }
+                CloseHandle(handle);
+            }
+        }
+        Ok(ended)
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        let _ = exe_name;
+        Ok(0)
+    }
+}
+
 // ----- Panic Abort: end every game window, tracked or not -----
 
 #[tauri::command]
@@ -368,5 +419,21 @@ mod tests {
         let removed = !has_icon();
         let _ = child.kill();
         assert!(removed, "the tray icon should be gone before the game is stopped");
+    }
+
+    /// Stop ends a game without starting any other program (no console window
+    /// can pop up): `cargo test --lib -- --ignored stop_ends`
+    #[test]
+    #[ignore]
+    fn stop_ends_the_game_without_a_helper_program() {
+        let exe = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../src-win/target/release/src-win.exe");
+        let mut child = std::process::Command::new(&exe).args(["--title", "Questly test"]).spawn().expect("runner");
+        std::thread::sleep(std::time::Duration::from_millis(1500));
+        remove_runner_tray_icons("src-win.exe");
+        let ended = terminate_by_name("src-win.exe").unwrap();
+        let status = child.wait().unwrap();
+        assert!(ended >= 1, "the game should have been ended");
+        assert_eq!(status.code(), Some(1), "ended like taskkill /F, not as if closed from its window");
+        assert_eq!(terminate_by_name("src-win.exe").unwrap(), 0, "nothing left to end");
     }
 }

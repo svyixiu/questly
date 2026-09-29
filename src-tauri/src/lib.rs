@@ -986,20 +986,10 @@ async fn stop_process(exec_name: String) -> Result<(), String> {
     {
         // a force-stopped game can't take its own tray icon down
         system::remove_runner_tray_icons(&process_name);
-        let output = std::process::Command::new("taskkill")
-            .arg("/F")
-            .arg("/IM")
-            .arg(&process_name)
-            .output()
-            .map_err(|e| format!("Failed to execute taskkill: {}", e))?;
-
-        if output.status.success() {
-            Ok(())
-        } else {
-            Err(format!(
-                "Failed to stop process: {}",
-                String::from_utf8_lossy(&output.stderr)
-            ))
+        // through the Windows API, not taskkill: no console window pops up or takes the focus
+        match system::terminate_by_name(&process_name)? {
+            0 => Err(format!("{} isn't running.", process_name)),
+            _ => Ok(()),
         }
     }
 
