@@ -17,6 +17,9 @@ pub struct SystemLoad {
     /// % of physical memory in use
     memory: f32,
     cores: usize,
+    /// physical memory in MB: all of it, and what's free right now
+    total_mb: u64,
+    free_mb: u64,
 }
 
 /// (idle, total) CPU times from the previous sample
@@ -51,12 +54,14 @@ pub fn system_load() -> SystemLoad {
 
         let mut mem: MEMORYSTATUSEX = unsafe { std::mem::zeroed() };
         mem.dwLength = std::mem::size_of::<MEMORYSTATUSEX>() as u32;
-        let memory = if unsafe { GlobalMemoryStatusEx(&mut mem) } != 0 { mem.dwMemoryLoad as f32 } else { 0.0 };
+        let ok = unsafe { GlobalMemoryStatusEx(&mut mem) } != 0;
+        let memory = if ok { mem.dwMemoryLoad as f32 } else { 0.0 };
+        let (total_mb, free_mb) = if ok { (mem.ullTotalPhys >> 20, mem.ullAvailPhys >> 20) } else { (0, 0) };
 
-        return SystemLoad { cpu: cpu.clamp(0.0, 100.0) as f32, memory, cores };
+        return SystemLoad { cpu: cpu.clamp(0.0, 100.0) as f32, memory, cores, total_mb, free_mb };
     }
     #[cfg(not(target_os = "windows"))]
-    SystemLoad { cpu: 0.0, memory: 0.0, cores }
+    SystemLoad { cpu: 0.0, memory: 0.0, cores, total_mb: 0, free_mb: 0 }
 }
 
 // ----- Legitimate Buddy: how long since the last keyboard/mouse input -----

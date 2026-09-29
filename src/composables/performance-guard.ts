@@ -9,6 +9,47 @@ export interface SystemLoad {
     cpu: number;
     memory: number;
     cores: number;
+    /** physical memory in MB: all of it, and what's free right now */
+    total_mb: number;
+    free_mb: number;
+}
+
+export interface Capacity {
+    /** games at a time this PC handles comfortably right now */
+    recommended: number;
+    cores: number;
+    freeMb: number;
+    cpu: number;
+}
+
+/** Free memory kept per game: its window is tiny, but Discord has to watch each one too. */
+const MB_PER_GAME = 256
+const MAX_RECOMMENDED = 32
+
+/**
+ * How many games at a time this PC runs comfortably: about one per processor
+ * thread, as long as each still leaves 256 MB of free memory, and half as many
+ * while the CPU is already busy.
+ */
+export function comfortableAtOnce(l: Pick<SystemLoad, 'cpu' | 'cores' | 'free_mb'>) {
+    const byCpu = Math.max(1, l.cores)
+    const byMemory = l.free_mb > 0 ? Math.floor(l.free_mb / MB_PER_GAME) : byCpu
+    let n = Math.min(byCpu, byMemory)
+    if (l.cpu >= 70) n = Math.floor(n / 2)
+    return Math.max(1, Math.min(MAX_RECOMMENDED, n))
+}
+
+/** Looks at the PC now (two CPU readings a moment apart); null if it can't be read. */
+export async function measureCapacity(): Promise<Capacity | null> {
+    try {
+        // the first reading only primes the CPU counters
+        await invoke('system_load')
+        await new Promise(resolve => setTimeout(resolve, 500))
+        const l = await invoke<SystemLoad>('system_load')
+        return { recommended: comfortableAtOnce(l), cores: l.cores, freeMb: l.free_mb, cpu: l.cpu }
+    } catch {
+        return null
+    }
 }
 
 /** Above these, the PC counts as under heavy load. */

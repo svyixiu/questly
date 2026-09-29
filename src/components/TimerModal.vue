@@ -4,10 +4,12 @@ import type { Game } from '@/types/types';
 import { useSettings } from '@/composables/settings';
 import { AT_ONCE_CHOICES, shuffle, useScheduler, type TimerMode, type TimerOrder } from '@/composables/scheduler';
 import { useDiscordDetect } from '@/composables/discord-detect';
+import { measureCapacity, usePerformanceGuard, type Capacity } from '@/composables/performance-guard';
 import { defaultExecutable, formatDuration } from '@/utils/executables';
 import { vSmooth } from '@/directives/smooth-scroll';
 import BaseModal from './BaseModal.vue';
 import GameAvatar from './GameAvatar.vue';
+import NumberField from './NumberField.vue';
 import ToggleSwitch from './ToggleSwitch.vue';
 import TypingInput from './TypingInput.vue';
 
@@ -22,6 +24,7 @@ const emit = defineEmits<{ close: [] }>();
 const { settings } = useSettings();
 const scheduler = useScheduler();
 const discord = useDiscordDetect();
+const guard = usePerformanceGuard();
 
 const MAX_SECONDS = 24 * 3600;
 // kept as text so typing (and the typing animation) behaves naturally
@@ -43,8 +46,14 @@ function nudge(e: KeyboardEvent, field: 'm' | 's') {
 const mode = ref<TimerMode>('parallel');
 const order = ref<TimerOrder>('fixed');
 const atOnce = ref(1);
+/** "Custom" picked: any number of games at a time, typed in */
+const customAtOnce = ref(false);
 const waitForDiscord = ref(true);
 const shuffled = ref<Game[]>([]);
+const capacity = ref<Capacity | null>(null);
+let measuring: Promise<void> = Promise.resolve();
+/** asking whether to go ahead with more at a time than the PC handles comfortably */
+const confirmHeavy = ref(false);
 
 function setTotal(total: number) {
     minutesText.value = String(Math.floor(total / 60));
@@ -59,8 +68,13 @@ watch(() => props.open, open => {
     mode.value = settings.value.timerMode;
     order.value = settings.value.timerOrder;
     atOnce.value = settings.value.timerAtOnce ?? 1;
+    customAtOnce.value = !(AT_ONCE_CHOICES as readonly number[]).includes(atOnce.value);
     waitForDiscord.value = settings.value.timerWaitForDiscord;
     shuffled.value = shuffle(launchable.value);
+    confirmHeavy.value = false;
+    // how many at a time this PC handles comfortably, measured fresh each time
+    capacity.value = null;
+    measuring = measureCapacity().then(c => { capacity.value = c; });
 }, { immediate: true });
 
 const presets = [30, 60, 5 * 60, 15 * 60, 30 * 60, 60 * 60];
@@ -82,6 +96,27 @@ const ordered = computed(() => sequential.value && order.value === 'random' ? sh
 const atOnceChoices = computed(() => AT_ONCE_CHOICES.filter(n => n === 1 || n < launchable.value.length));
 /** the count actually used: a remembered 10 becomes 3 for 4 games */
 const slots = computed(() => Math.max(1, Math.min(atOnce.value, launchable.value.length)));
+const canCustomize = computed(() => launchable.value.length > 2);
+
+function pickAtOnce(n: number) {
+    customAtOnce.value = false;
+    atOnce.value = n;
+}
+
+function pickCustom() {
+    customAtOnce.value = true;
+}
+
+/** more at a time than this PC handles comfortably (only once it's been measured) */
+const tooMany = computed(() => sequential.value && !!capacity.value && slots.value > capacity.value.recommended);
+const capacityReason = computed(() => {
+    const c = capacity.value;
+    if (!c) return '';
+    const parts = [`${c.cores} processor threads`];
+    if (c.freeMb > 0) parts.push(`${(c.freeMb / 1024).toFixed(1)} GB of free memory`);
+    parts.push(`the CPU at ${Math.round(c.cpu)}% right now`);
+    return parts.length > 2 ? `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}` : parts.join(' and ');
+});
 
 // The queue preview shows the first games only: thousands of rows would make
 // the dialog slow to open and to shuffle, and nobody reads past the top.
@@ -100,9 +135,26 @@ function reshuffle() {
 // several at a time: rounds of `slots` games, each taking the time per game
 const totalRun = computed(() => sequential.value ? total.value * Math.ceil(launchable.value.length / slots.value) : total.value);
 
-function start() {
+async function start() {
     normalize();
     if (!valid.value || launchable.value.length === 0) return;
+    // a quick Start right after opening waits the half second the measurement takes
+    await measuring;
+    if (tooMany.value) {
+        confirmHeavy.value = true;
+        return;
+    }
+    run();
+}
+
+/** from the warning: go ahead as chosen, or with the comfortable number */
+function startWith(n?: number) {
+    if (n !== undefined) pickAtOnce(n);
+    confirmHeavy.value = false;
+    run();
+}
+
+function run() {
     scheduler.start(ordered.value, total.value, {
         mode: mode.value,
         order: order.value,
@@ -166,7 +218,7 @@ function start() {
                 <Transition name="rise">
                     <p v-if="mode === 'parallel' && launchable.length > 25" class="mt-2 text-xs text-warn leading-snug">
                         {{ launchable.length.toLocaleString() }} games at the same time can slow your PC down. One after
-                        another with 5 or 10 at a time gets through them steadily.
+                        another with {{ capacity ? `${capacity.recommended} at a time` : 'a few at a time' }} gets through them steadily.
                     </p>
                 </Transition>
 
@@ -194,10 +246,22 @@ function start() {
                                 </div>
                             </div>
                             <div class="seg shrink-0" role="radiogroup" aria-label="Games at a time">
-                                <button v-for="n in atOnceChoices" :key="n" role="radio" :aria-checked="slots === n"
-                                    class="tabular-nums" :class="{ on: slots === n }" @click="atOnce = n">{{ n }}</button>
+                                <button v-for="n in atOnceChoices" :key="n" role="radio" :aria-checked="!customAtOnce && slots === n"
+                                    class="tabular-nums" :class="{ on: !customAtOnce && slots === n }" @click="pickAtOnce(n)">{{ n }}</button>
+                                <button v-if="canCustomize" role="radio" :aria-checked="customAtOnce" :class="{ on: customAtOnce }"
+                                    @click="pickCustom">Custom</button>
                             </div>
                         </div>
+                        <Transition name="rise">
+                            <div v-if="customAtOnce && canCustomize" class="mt-2 flex items-center justify-end gap-2.5">
+                                <span class="text-xs text-muted">Games at a time</span>
+                                <NumberField v-model="atOnce" :min="1" :max="launchable.length" :chars="4" label="Games at a time" />
+                            </div>
+                        </Transition>
+                        <p v-if="capacity" class="mt-2 text-xs leading-snug text-right" :class="tooMany ? 'text-warn' : 'text-muted'">
+                            <template v-if="tooMany">More than this PC handles comfortably. {{ capacity.recommended }} at a time is recommended.</template>
+                            <template v-else>This PC handles up to {{ capacity.recommended }} at a time comfortably.</template>
+                        </p>
                         <div v-smooth class="mt-3 max-h-40 overflow-y-auto rounded-2xl bg-glass border border-line p-1.5">
                             <!-- the whole queue fits: games glide to their new places; a longer
                                  queue swaps its first rows in one fade (they're mostly new games) -->
@@ -235,6 +299,22 @@ function start() {
                     stroke-linecap="round"><circle cx="12" cy="13" r="8" /><path d="M12 9v4l2.5 2M9 2h6" /></svg>
                 Start timed run
             </button>
+        </template>
+    </BaseModal>
+
+    <!-- more at a time than the PC handles comfortably: go ahead, or take the suggestion -->
+    <BaseModal :open="open && confirmHeavy && !!capacity" eyebrow="Timed run" width="30rem" @close="confirmHeavy = false"
+        :title="`${slots} at a time is a lot for this PC.`">
+        <p class="text-[15px] text-muted leading-snug">
+            Questly suggests <span class="text-ink font-semibold">{{ capacity?.recommended }} at a time</span> here,
+            going by {{ capacityReason }}. More games at once can make your PC and Discord sluggish.
+        </p>
+        <p v-if="guard.enabled.value" class="text-xs text-muted mt-3 leading-snug">
+            Performance Guard still closes a few games for a while if your PC starts to struggle.
+        </p>
+        <template #footer>
+            <button class="btn btn-glass" @click="startWith()">Continue with {{ slots }}</button>
+            <button class="btn btn-primary" @click="startWith(capacity!.recommended)">Use {{ capacity?.recommended }} at a time</button>
         </template>
     </BaseModal>
 </template>

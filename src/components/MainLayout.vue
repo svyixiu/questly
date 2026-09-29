@@ -17,7 +17,7 @@ import PanicModal from './PanicModal.vue';
 /** minimal: just the title bar (installer / uninstaller screens) */
 const props = defineProps<{ minimal?: boolean }>();
 
-const { page, setPage } = useGlobalState();
+const { page, setPage, addLog } = useGlobalState();
 const { gameDB, gameListSource, allFetchDone, fetchGameList } = useGameDB();
 const { runningGames } = useGameLibrary();
 const discord = useDiscordDetect();
@@ -46,10 +46,12 @@ const minimize = () => win()?.minimize().catch(() => {});
 
 const { settings } = useSettings();
 
-// Always on top: Questly's window stays above every other app
-if (!props.minimal) {
-  watch(() => settings.value.alwaysOnTop, on => { win()?.setAlwaysOnTop(on).catch(() => {}); }, { immediate: true });
-}
+// Always on top: Questly's window stays above every other app. Watched together
+// with `minimal`: the app starts out "loading" (minimal) and only becomes the
+// app a moment later, so a one-time check at startup never applied it.
+watch(() => !props.minimal && settings.value.alwaysOnTop, on => {
+  win()?.setAlwaysOnTop(on).catch(error => addLog('error', `Couldn't change Always on top: ${error}`));
+}, { immediate: true });
 const toggleOnTop = () => { settings.value.alwaysOnTop = !settings.value.alwaysOnTop; };
 
 // the Library page's library panel folds away (a hamburger opens it again)

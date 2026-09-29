@@ -300,9 +300,10 @@ async function handle(cmd: string, args: Args): Promise<unknown> {
         // --- the PC: load, idle time, startup ---
         case 'system_load': {
             const r = Math.random()
+            const total_mb = 16384
             return sim.heavy
-                ? { cpu: 92 + r * 6, memory: 88 + r * 4, cores: navigator.hardwareConcurrency || 8 }
-                : { cpu: 11 + r * 17, memory: 46 + r * 6, cores: navigator.hardwareConcurrency || 8 }
+                ? { cpu: 92 + r * 6, memory: 88 + r * 4, cores: navigator.hardwareConcurrency || 8, total_mb, free_mb: Math.round(total_mb * 0.1) }
+                : { cpu: 11 + r * 17, memory: 46 + r * 6, cores: navigator.hardwareConcurrency || 8, total_mb, free_mb: Math.round(total_mb * 0.5) }
         }
         case 'idle_seconds':
             return sim.away ? 3600 + Math.floor((Date.now() - awaySince) / 1000) : Math.floor((Date.now() - lastInput) / 1000)

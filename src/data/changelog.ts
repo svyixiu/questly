@@ -30,6 +30,17 @@ export const CHANGE_KINDS: { id: ChangeKind; label: string }[] = [
 
 export const CHANGELOG: Release[] = [
     {
+        version: '1.3.1',
+        date: '2026-09-30',
+        title: 'Custom counts, and a pin that works',
+        changes: [
+            { kind: 'new', text: 'One after another has a Custom choice: type how many games play at a time.' },
+            { kind: 'new', text: "Questly works out how many games at a time your PC handles comfortably, from its processor threads, free memory and how busy the CPU is. Pick more and it asks first: continue with your number, or use the recommended one." },
+            { kind: 'fixed', text: "Always on top didn't do anything. The setting was checked before Questly had finished starting, so it was never applied. The pin and the Settings toggle now keep the window above other apps, also after a restart." },
+            { kind: 'improved', text: 'The note under All at once suggests the recommended number of games at a time for your PC.' },
+        ],
+    },
+    {
         version: '1.3.0',
         date: '2026-09-30',
         title: 'Several at a time, and thousands of games',
