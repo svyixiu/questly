@@ -8,6 +8,7 @@ import { useGameLibrary } from '@/composables/game-library'
 import { useScheduler } from '@/composables/scheduler'
 import { Pages, useGlobalState } from '@/composables/app-state'
 import { useSettings } from '@/composables/settings'
+import { TERMS_VERSION } from '@/data/legal'
 import { inFrame, onHost, toHost, type Sim } from './bridge'
 
 declare const __APP_VERSION__: string
@@ -42,7 +43,11 @@ if (!store.get(KEYS.seeded) || scene) {
     let settings: Record<string, unknown> = {}
     try { settings = JSON.parse(store.get('dqc.settings.v1') ?? '{}') } catch { /* fresh */ }
     settings.gameWindowMode = 'visible'
-    if (scene) settings.riskAcceptedAt = Date.now()
+    if (scene) {
+        settings.riskAcceptedAt = Date.now()
+        settings.termsAcceptedAt = Date.now()
+        settings.termsVersion = TERMS_VERSION
+    }
     store.set('dqc.settings.v1', JSON.stringify(settings))
 }
 
@@ -292,6 +297,11 @@ async function handle(cmd: string, args: Args): Promise<unknown> {
             return store.get(KEYS.autostart) === '1'
         case 'set_autostart':
             store.set(KEYS.autostart, args.enabled ? '1' : '0')
+            return null
+
+        // links (Terms, website…) open in a new tab
+        case 'plugin:opener|open_url':
+            window.open(String(args.url), '_blank', 'noopener')
             return null
 
         case 'greet':

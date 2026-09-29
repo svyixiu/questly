@@ -1,8 +1,13 @@
 <script setup lang="ts">
 import AnimatedCheckbox from './AnimatedCheckbox.vue';
+import { LINKS, openLink } from '@/data/legal';
 
-/** The rules & risk text, plus the "I understand" checkbox (v-model). */
-const agreed = defineModel<boolean>({ required: true });
+/**
+ * The rules & risk text, with the two boxes both needed to continue:
+ * understanding the risk (v-model:risk) and agreeing to the Terms (v-model:terms).
+ */
+const risk = defineModel<boolean>('risk', { required: true });
+const terms = defineModel<boolean>('terms', { required: true });
 </script>
 
 <template>
@@ -25,13 +30,59 @@ const agreed = defineModel<boolean>({ required: true });
             </p>
         </div>
 
-        <label class="mt-4 flex items-start gap-3 rounded-2xl border border-line-strong px-4 py-3 cursor-pointer"
-            @click.prevent="agreed = !agreed">
-            <AnimatedCheckbox :checked="agreed" label="I understand the risks" class="mt-0.5" @toggle="agreed = !agreed" />
-            <span class="text-sm text-ink leading-snug">
-                I understand that using Questly could get my Discord account suspended or banned, and that I alone am
-                responsible for the consequences.
-            </span>
-        </label>
+        <div class="mt-4 space-y-2">
+            <label class="agree" :class="{ on: risk }" @click.prevent="risk = !risk">
+                <AnimatedCheckbox :checked="risk" label="I understand the risks" class="mt-0.5" @toggle="risk = !risk" />
+                <span class="text-sm text-ink leading-snug">
+                    I understand that using Questly could get my Discord account suspended or banned, and that I alone am
+                    responsible for the consequences.
+                </span>
+            </label>
+            <label class="agree" :class="{ on: terms }" @click.prevent="terms = !terms">
+                <AnimatedCheckbox :checked="terms" label="I agree to the Terms of Service and Terms of Use" class="mt-0.5"
+                    @toggle="terms = !terms" />
+                <span class="text-sm text-ink leading-snug">
+                    I agree to the
+                    <a class="doc-link" :href="LINKS.terms" @click.stop.prevent="openLink(LINKS.terms)">Terms of Service</a>
+                    and the
+                    <a class="doc-link" :href="LINKS.termsOfUse" @click.stop.prevent="openLink(LINKS.termsOfUse)">Terms of Use</a>,
+                    and I've read the
+                    <a class="doc-link" :href="LINKS.privacy" @click.stop.prevent="openLink(LINKS.privacy)">Privacy Policy</a>.
+                </span>
+            </label>
+        </div>
     </div>
 </template>
+
+<style scoped>
+.agree {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-radius: 16px;
+    border: 1px solid var(--line-strong);
+    cursor: pointer;
+    transition: border-color 150ms ease, background-color 150ms ease;
+}
+
+.agree:hover {
+    background: var(--glass);
+}
+
+.agree.on {
+    border-color: var(--ink-2);
+}
+
+.doc-link {
+    font-weight: 600;
+    text-decoration: underline;
+    text-decoration-thickness: 1.5px;
+    text-underline-offset: 2px;
+    cursor: pointer;
+}
+
+.doc-link:hover {
+    text-decoration-thickness: 2.5px;
+}
+</style>

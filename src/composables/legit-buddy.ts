@@ -9,6 +9,7 @@ import { useGlobalState } from './app-state'
 import { useDiscordDetect } from './discord-detect'
 import { useScheduler } from './scheduler'
 import { useStartup } from './startup'
+import { hasAgreed } from '@/data/legal'
 
 export interface DiscordClient {
     id: string;
@@ -265,7 +266,7 @@ export const useBuddy = createGlobalState(() => {
             if (session.value) await endSession('turned off')
             return setPhase('off')
         }
-        if (!settings.value.riskAcceptedAt) return setPhase('blocked', 'Accept the risk notice first')
+        if (!hasAgreed(settings.value)) return setPhase('blocked', 'Accept the notice and Terms first')
         if (!startup.enabled.value) return setPhase('blocked', 'Needs Launch on startup')
 
         idleSeconds.value = await invoke<number>('idle_seconds').catch(() => 0)

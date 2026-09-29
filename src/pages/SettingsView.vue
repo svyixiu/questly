@@ -20,6 +20,10 @@ import ToggleSwitch from '@/components/ToggleSwitch.vue';
 import ColorField from '@/components/ColorField.vue';
 import RangeSlider from '@/components/RangeSlider.vue';
 import NumberField from '@/components/NumberField.vue';
+import LogoMark from '@/components/LogoMark.vue';
+import ChangelogModal from '@/components/ChangelogModal.vue';
+import { CHANGELOG, formatReleaseDate } from '@/data/changelog';
+import { LINKS, openLink } from '@/data/legal';
 
 const { settings, defaults } = useSettings();
 const { toast } = useToasts();
@@ -239,14 +243,29 @@ function commitTimeout() {
 // ----- installation -----
 const installer = useInstaller();
 const installInfo = installer.info;
+
+// ----- about -----
+const changelogOpen = ref(false);
+const appVersion = computed(() => installInfo.value?.version ?? CHANGELOG[0].version);
+const updatedOn = computed(() => formatReleaseDate((CHANGELOG.find(r => r.version === appVersion.value) ?? CHANGELOG[0]).date));
+const agreedOn = computed(() => settings.value.termsAcceptedAt
+    ? new Date(settings.value.termsAcceptedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })
+    : null);
 </script>
 
 <template>
     <div v-smooth class="h-full overflow-y-auto px-4 pb-4">
         <div class="max-w-[1000px] mx-auto pt-5">
-            <div class="px-2 pb-4">
-                <div class="eyebrow">Settings</div>
-                <h1 class="display text-[34px] leading-[38px] text-ink mt-1">Make it yours.</h1>
+            <div class="px-2 pb-4 flex items-end justify-between gap-4">
+                <div>
+                    <div class="eyebrow">Settings</div>
+                    <h1 class="display text-[34px] leading-[38px] text-ink mt-1">Make it yours.</h1>
+                </div>
+                <button class="version-pill" data-tip="See what changed" data-tip-pos="bottom" @click="changelogOpen = true">
+                    <span class="font-semibold text-ink">Questly {{ appVersion }}</span>
+                    <span class="text-muted">· updated {{ updatedOn }}</span>
+                    <span class="version-cta">Changelog</span>
+                </button>
             </div>
 
             <div class="grid grid-cols-2 gap-4 items-start">
@@ -729,7 +748,52 @@ const installInfo = installer.info;
                         </div>
                     </div>
                 </section>
+
+                <!-- ===== About ===== -->
+                <section class="glass p-6 col-span-2">
+                    <div class="flex items-center gap-5">
+                        <LogoMark class="w-14 h-14 shrink-0" />
+                        <div class="min-w-0">
+                            <div class="eyebrow">About</div>
+                            <h2 class="display text-[30px] leading-[32px] text-ink mt-0.5">Questly</h2>
+                            <p class="text-sm text-muted mt-1">
+                                Version <span class="text-ink-2 font-semibold">{{ appVersion }}</span> · updated {{ updatedOn }}
+                            </p>
+                        </div>
+                        <div class="ml-auto flex flex-wrap justify-end gap-2">
+                            <button class="btn btn-primary btn-sm" @click="changelogOpen = true">Changelog</button>
+                            <button class="btn btn-glass btn-sm" @click="openLink(LINKS.website)">Website</button>
+                            <button class="btn btn-glass btn-sm" @click="openLink(LINKS.source)">Source code</button>
+                        </div>
+                    </div>
+
+                    <div class="row mt-5">
+                        <div class="min-w-0">
+                            <div class="row-title">Terms &amp; notice</div>
+                            <div class="row-desc">
+                                <template v-if="agreedOn">You agreed to the Terms of Service and Terms of Use on {{ agreedOn }}.</template>
+                                <template v-else>You accepted the risk notice.</template>
+                                Read them again any time:
+                            </div>
+                            <div class="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-[13px]">
+                                <button class="doc-link" @click="openLink(LINKS.terms)">Terms of Service</button>
+                                <button class="doc-link" @click="openLink(LINKS.termsOfUse)">Terms of Use</button>
+                                <button class="doc-link" @click="openLink(LINKS.privacy)">Privacy Policy</button>
+                                <button class="doc-link" @click="openLink(LINKS.licenses)">Licenses</button>
+                                <button class="doc-link" @click="openLink(LINKS.credits)">Credits</button>
+                            </div>
+                        </div>
+                        <button class="btn btn-glass btn-sm shrink-0" @click="settings.riskAcceptedAt = null">Review the notice</button>
+                    </div>
+                    <p class="text-xs text-muted leading-relaxed pt-3 border-t border-line">
+                        Built on <button class="doc-link" @click="openLink(LINKS.original)">Discord Quest Completer</button> by
+                        Mark Terence Tiglao, under the MIT License. Questly isn't affiliated with or endorsed by Discord, and you use
+                        it at your own risk.
+                    </p>
+                </section>
             </div>
+
+            <ChangelogModal :open="changelogOpen" :current-version="appVersion" @close="changelogOpen = false" />
 
             <BaseModal :open="!!pendingImport" eyebrow="Import" title="How should it be added?" width="32rem" @close="pendingImport = null">
                 <template v-if="pendingImport">
@@ -779,13 +843,6 @@ const installInfo = installer.info;
                 </template>
             </BaseModal>
 
-            <div class="flex items-center justify-between gap-4 px-2 pt-5 pb-2 text-xs text-muted">
-                <span>
-                    Questly isn't affiliated with or endorsed by Discord. You use it at your own risk.
-                    Built on <span class="text-ink-2">Discord Quest Completer</span> by markterence (MIT License).
-                </span>
-                <button class="btn btn-link btn-sm !h-7 shrink-0" @click="settings.riskAcceptedAt = null">Review the risk notice</button>
-            </div>
         </div>
     </div>
 </template>
@@ -916,6 +973,55 @@ const installInfo = installer.info;
     gap: 1.25rem;
     padding: 0.8rem 0;
     border-top: 1px solid var(--line);
+}
+
+.version-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 34px;
+    padding: 0 5px 0 14px;
+    border-radius: 999px;
+    border: 1px solid var(--line-strong);
+    font-size: 0.8rem;
+    white-space: nowrap;
+    transition: border-color 150ms ease, background-color 150ms ease, transform 220ms var(--ease-spring);
+}
+
+.version-pill:hover {
+    border-color: var(--ink-2);
+    background: var(--glass-2);
+}
+
+.version-pill:active {
+    transform: scale(0.97);
+}
+
+.version-cta {
+    margin-left: 4px;
+    height: 24px;
+    padding: 0 10px;
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    background: var(--btn);
+    color: var(--btn-ink);
+    font-weight: 700;
+    font-size: 0.74rem;
+}
+
+.doc-link {
+    color: var(--ink-2);
+    font-weight: 600;
+    text-decoration: underline;
+    text-decoration-color: var(--line-strong);
+    text-underline-offset: 3px;
+    transition: color 150ms ease, text-decoration-color 150ms ease;
+}
+
+.doc-link:hover {
+    color: var(--ink);
+    text-decoration-color: var(--accent);
 }
 
 .orb-pen {

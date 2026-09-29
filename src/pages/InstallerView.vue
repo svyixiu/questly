@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { useInstaller } from '@/composables/installer';
-import { useSettings } from '@/composables/settings';
+import { recordAgreement, useSettings } from '@/composables/settings';
 import AnimatedCheckbox from '@/components/AnimatedCheckbox.vue';
 import RiskTerms from '@/components/RiskTerms.vue';
 import LogoMark from '@/components/LogoMark.vue';
@@ -14,14 +14,15 @@ type Step = 'welcome' | 'rules' | 'installing' | 'done' | 'error';
 const step = ref<Step>('welcome');
 const desktop = ref(true);
 const startMenu = ref(true);
-const agreed = ref(false);
+const risk = ref(false);
+const terms = ref(false);
 const error = ref('');
 const launching = ref(false);
 
 const stepIndex = computed(() => ({ welcome: 0, rules: 1, installing: 2, done: 2, error: 2 })[step.value]);
 
 async function runInstall() {
-    settings.value.riskAcceptedAt = Date.now();
+    recordAgreement(settings);
     step.value = 'installing';
     // give the progress screen a moment so the change isn't jarring
     const [result] = await Promise.all([installer.install(desktop.value, startMenu.value), new Promise(r => setTimeout(r, 900))]);
@@ -126,7 +127,7 @@ const features = [
                     <div v-else-if="step === 'rules'" key="rules">
                         <div class="eyebrow mb-1.5">Rules &amp; policy</div>
                         <h2 class="display text-[28px] leading-[30px] text-ink mb-3">Your account, your responsibility.</h2>
-                        <RiskTerms v-model="agreed" />
+                        <RiskTerms v-model:risk="risk" v-model:terms="terms" />
                     </div>
 
                     <!-- Installing -->
@@ -164,7 +165,7 @@ const features = [
                 </template>
                 <template v-else-if="step === 'rules'">
                     <button class="btn btn-glass" @click="step = 'welcome'">Back</button>
-                    <button class="btn btn-primary ml-auto" :disabled="!agreed" @click="runInstall">Accept &amp; install</button>
+                    <button class="btn btn-primary ml-auto" :disabled="!risk || !terms" @click="runInstall">Accept &amp; install</button>
                 </template>
                 <template v-else-if="step === 'done'">
                     <button class="btn btn-link" @click="installer.quit()">Close</button>

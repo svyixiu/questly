@@ -1,7 +1,8 @@
 import { createGlobalState, useStorage } from '@vueuse/core'
-import { watch } from 'vue'
+import { watch, type Ref } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { applyAppearance, normalizeCustomTheme, THEMES, type CustomTheme, type ThemeId } from '@/theme/themes'
+import { TERMS_VERSION } from '@/data/legal'
 
 export const SETTINGS_KEY = 'dqc.settings.v1'
 
@@ -68,6 +69,9 @@ export interface AppSettings {
     detectTimeoutSec: number;
     /** when the user accepted the risk notice (null = not yet) */
     riskAcceptedAt: number | null;
+    /** when the user agreed to the Terms of Service and Terms of Use, and which version */
+    termsAcceptedAt: number | null;
+    termsVersion: string | null;
     /** how a launched game's window appears (Auto hide always hides it) */
     gameWindowMode: 'hidden' | 'parked' | 'visible';
     perfGuard: GuardSettings;
@@ -118,6 +122,8 @@ const DEFAULTS: AppSettings = {
     timerWaitForDiscord: true,
     detectTimeoutSec: 120,
     riskAcceptedAt: null,
+    termsAcceptedAt: null,
+    termsVersion: null,
     gameWindowMode: 'parked',
     perfGuard: { enabled: true, sensitivity: 'balanced' },
     buddy: DEFAULT_BUDDY,
@@ -170,6 +176,14 @@ export const useSettings = createGlobalState(() => {
 
     return { settings, defaults: DEFAULTS }
 })
+
+/** The user accepted the risk notice and agreed to the current Terms. */
+export function recordAgreement(settings: Ref<AppSettings>) {
+    const now = Date.now()
+    settings.value.riskAcceptedAt = now
+    settings.value.termsAcceptedAt = now
+    settings.value.termsVersion = TERMS_VERSION
+}
 
 export function hideWindow() {
     return invoke('hide_window').catch(() => {})
